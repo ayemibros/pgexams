@@ -1,0 +1,147 @@
+{
+  "questions": [
+    {
+      "type": "mcq_single",
+      "stem": "Choose the option that best completes the sentence: The committee ____ its report yesterday.",
+      "choices": [
+        { "text": "submit", "is_correct": false },
+        { "text": "submitted", "is_correct": true },
+        { "text": "submitting", "is_correct": false },
+        { "text": "have submitted", "is_correct": false }
+      ],
+      "explanation": "'Yesterday' marks a completed past action, so the simple past 'submitted' is correct.",
+      "difficulty": "easy",
+      "points": 1,
+      "topic": "Grammar",
+      "subtopic": "Tenses",
+      "year": 2024
+    },
+    {
+      "type": "mcq_single",
+      "stem": "Which of these words is closest in meaning to 'ubiquitous'?",
+      "choice_a": "Rare",
+      "choice_b": "Everywhere",
+      "choice_c": "Ancient",
+      "choice_d": "Hidden",
+      "correct": "B",
+      "explanation": "'Ubiquitous' means present or found everywhere.",
+      "difficulty": "medium",
+      "points": 1,
+      "topic": "Vocabulary",
+      "year": 2023
+    },
+    {
+      "type": "mcq_multi",
+      "stem": "Which of the following are prime numbers? (Select all that apply)",
+      "choices": [
+        { "text": "2", "is_correct": true },
+        { "text": "9", "is_correct": false },
+        { "text": "11", "is_correct": true },
+        { "text": "15", "is_correct": false }
+      ],
+      "explanation": "2 and 11 have exactly two factors; 9 = 3×3 and 15 = 3×5.",
+      "difficulty": "easy",
+      "points": 2,
+      "topic": "Number Theory"
+    },
+    {
+      "type": "true_false",
+      "stem": "An algorithm with O(n log n) time complexity is always faster than one with O(n²) for every input size.",
+      "answer": "false",
+      "explanation": "Big-O describes growth for large n; for small inputs an O(n²) algorithm can be faster.",
+      "difficulty": "medium",
+      "points": 1,
+      "topic": "Algorithms"
+    },
+    {
+      "type": "fill_blank",
+      "stem": "The capital of Nigeria is ____ and its largest city is ____.",
+      "blank_answers": [
+        ["Abuja"],
+        ["Lagos", "Lagos City"]
+      ],
+      "explanation": "Abuja became the capital in 1991; Lagos remains the largest city.",
+      "difficulty": "easy",
+      "points": 2,
+      "topic": "General Knowledge"
+    },
+    {
+      "type": "fill_blank",
+      "stem": "The chemical symbol for sodium is ____.",
+      "answer": "Na|na",
+      "difficulty": "easy",
+      "points": 1,
+      "topic": "Chemistry"
+    },
+    {
+      "type": "numeric",
+      "stem": "What is 12% of 250?",
+      "answer": 30,
+      "tolerance": 0,
+      "unit": "",
+      "explanation": "12/100 × 250 = 30.",
+      "difficulty": "easy",
+      "points": 1,
+      "topic": "Percentages"
+    },
+    {
+      "type": "numeric",
+      "stem": "A car travels 150 km in 2.5 hours. What is its average speed?",
+      "answer": 60,
+      "tolerance": 0.5,
+      "unit": "km/h",
+      "explanation": "Speed = distance ÷ time = 150 ÷ 2.5 = 60 km/h.",
+      "difficulty": "medium",
+      "points": 2,
+      "topic": "Kinematics"
+    },
+    {
+      "type": "theory",
+      "stem": "Explain the difference between primary and secondary data in research. Give one example of each.",
+      "model_answer": "Primary data is collected first-hand by the researcher for the study (e.g. a questionnaire); secondary data was collected by someone else for another purpose (e.g. census reports).",
+      "keywords": ["primary", "secondary", "first-hand", "example"],
+      "difficulty": "hard",
+      "points": 5,
+      "topic": "Research Methods"
+    },
+    {
+      "type": "match",
+      "stem": "Match each programming language to the paradigm it is best known for.",
+      "match_left": ["Haskell", "C", "Prolog"],
+      "match_right": ["Procedural", "Logic", "Functional"],
+      "correct_pairs": [[0, 2], [1, 0], [2, 1]],
+      "explanation": "Haskell → Functional, C → Procedural, Prolog → Logic.",
+      "difficulty": "medium",
+      "points": 3,
+      "topic": "Programming Paradigms"
+    },
+    {
+      "type": "order",
+      "stem": "Arrange the stages of the research process in the correct order.",
+      "order_items": [
+        "Identify the problem",
+        "Review the literature",
+        "Collect data",
+        "Analyse data",
+        "Report findings"
+      ],
+      "difficulty": "medium",
+      "points": 2,
+      "topic": "Research Methods"
+    },
+    {
+      "type": "category",
+      "stem": "Drag each item into the correct category.",
+      "categories": ["Input device", "Output device"],
+      "category_items": [
+        ["Keyboard", 0],
+        ["Monitor", 1],
+        ["Scanner", 0],
+        ["Printer", 1]
+      ],
+      "difficulty": "easy",
+      "points": 2,
+      "topic": "Computer Hardware"
+    }
+  ]
+}
