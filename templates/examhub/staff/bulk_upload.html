@@ -1,5 +1,5 @@
 {% extends "layout/staff_shell.html" %}
-{% block page_title %}Bulk Upload — {{ bank.name }}{% endblock %}
+{% block page_title %}{% if bank %}Bulk Upload — {{ bank.name }}{% else %}Bulk Upload Questions{% endif %}{% endblock %}
 {% block content %}
 <style>
 .bu-wrap{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;align-items:start}
@@ -49,7 +49,7 @@
 </style>
 
 <div class="bu-head">
-  <div class="bu-title">Bulk Upload — {{ bank.name }}</div>
+  <div class="bu-title">{% if bank %}Bulk Upload — {{ bank.name }}{% else %}Bulk Upload Questions{% endif %}</div>
   <div class="bu-sub">Import many questions at once from a CSV or JSON file. All rows are sanitized and validated the same way as the manual question form.</div>
   <div class="bu-templates">
     <a href="{{ url('examhub:bulk_upload_template', 'json') }}" class="bu-tpl-link">⬇ JSON template</a>
@@ -109,9 +109,33 @@
       <button type="button" class="bu-tab" data-tab="paste">📋 Paste JSON</button>
     </div>
 
-    <form method="post" enctype="multipart/form-data" id="bulk-form">
+    <form method="post" enctype="multipart/form-data" id="bulk-form"{% if bank %} action="{{ url('examhub:bulk_upload', bank.pk) }}"{% endif %}>
       {{ csrf_input }}
       <input type="hidden" name="fmt" id="fmt-field" value="json">
+
+      {% if not bank %}
+      <div class="card" style="padding:1rem 1.1rem;margin-bottom:1rem">
+        <label class="form-label">Put these questions in</label>
+        <select name="bank_choice" id="bank-choice" class="form-select" onchange="document.getElementById('new-bank-fields').style.display = this.value === 'new' ? '' : 'none'">
+          {% for b in banks %}<option value="{{ b.pk }}" {% if form.bank_choice == b.pk|stringformat("s") %}selected{% endif %}>{{ b.name }}</option>{% endfor %}
+          <option value="new" {% if form.bank_choice == "new" %}selected{% endif %}>+ New question bank…</option>
+        </select>
+        <div id="new-bank-fields" style="margin-top:.8rem;{% if form.bank_choice != 'new' %}display:none{% endif %}">
+          <div class="form-row">
+            <label class="form-label">New bank name</label>
+            <input type="text" name="new_bank_name" class="form-input" value="{{ form.new_bank_name }}" placeholder="e.g. EPT 2024 or Geology Past Questions">
+          </div>
+          <div class="form-row" style="margin-bottom:0">
+            <label class="form-label">Subject (optional)</label>
+            <select name="subject" class="form-select">
+              <option value="">— None —</option>
+              {% for s in subjects %}<option value="{{ s.pk }}" {% if form.subject == s.pk|stringformat("s") %}selected{% endif %}>{{ s.icon }} {{ s.name }}</option>{% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="form-hint">A question bank is a folder of questions. After importing, add them to an exam from the exam's Manage Questions page.</div>
+      </div>
+      {% endif %}
 
       <div class="bu-panel active" data-panel="file">
         <div class="dropzone" id="dropzone">
@@ -131,7 +155,7 @@
       </div>
 
       <button type="submit" class="btn btn-primary" id="submit-btn" style="margin-top:1rem">Import Questions</button>
-      <a href="{{ url('examhub:bank_questions', bank.pk) }}" class="btn btn-outline">Back to Bank</a>
+      {% if bank %}<a href="{{ url('examhub:bank_questions', bank.pk) }}" class="btn btn-outline">Back to Bank</a>{% else %}<a href="{{ url('examhub:bank_list') }}" class="btn btn-outline">Question Banks</a>{% endif %}
     </form>
 
     <details class="bu-cheat">

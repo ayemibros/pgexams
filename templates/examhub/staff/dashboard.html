@@ -25,6 +25,7 @@
   </div>
   <div class="page-head-actions">
     <a href="{{ url('examhub:exam_add') }}" class="btn btn-primary">+ New Exam</a>
+    <a href="{{ url('examhub:bulk_upload_start') }}" class="btn btn-outline" style="background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.2);color:#fff">⬆ Bulk Upload Questions</a>
     <a href="{{ url('examhub:bank_add') }}" class="btn btn-outline" style="background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.2);color:#fff">+ New Bank</a>
   </div>
 </div>
@@ -85,6 +86,7 @@
 {% endif %}
 
 <div class="quick-grid">
+  <a href="{{ url('examhub:bulk_upload_start') }}" class="quick-card"><div class="icon-chip" style="background:rgba(16,185,129,.1)">⬆️</div><div><div class="quick-card-title">Bulk Upload Questions</div><div class="quick-card-sub">Import many questions at once from a JSON or CSV file</div></div></a>
   <a href="{{ url('examhub:bank_list') }}" class="quick-card"><div class="icon-chip" style="background:rgba(91,94,244,.1)">📚</div><div><div class="quick-card-title">Manage Question Banks</div><div class="quick-card-sub">Author, tag, and organize questions</div></div></a>
   <a href="{{ url('examhub:staff_exam_list') }}" class="quick-card"><div class="icon-chip" style="background:rgba(245,158,11,.1)">📝</div><div><div class="quick-card-title">Build &amp; Publish Exams</div><div class="quick-card-sub">Sections, timing, integrity rules</div></div></a>
 </div>

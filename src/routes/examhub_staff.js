@@ -302,22 +302,15 @@ async function createImportedQuestion(bank, user, row, i, createdRows, errorRows
   }
 }
 
-route(router, 'examhub:bulk_upload', async (req, res, { bank_pk }) => {
-  if (!isTeacher(req)) return denied(req, res);
-  const bank = await getBank(bank_pk);
-  const base = { active: 'banks', bank, type_choices: Question.TYPE_CHOICES };
-  if (req.method !== 'POST') return render(req, res, 'examhub/staff/bulk_upload.html', base);
+const hasUploadInput = (req) => Boolean(req.FILES.get('bulk_file') || strip(req.POST.get('raw_json', '')));
 
+/** Imports the posted file / pasted JSON into `bank`; adds the flash messages and returns the result summary. */
+async function importIntoBank(req, bank) {
   const upload = req.FILES.get('bulk_file');
   const rawText = strip(req.POST.get('raw_json', ''));
   const fmt = req.POST.get('fmt', 'json');
   const createdRows = [];
   const errorRows = [];
-  if (!upload && !rawText) {
-    messages.error(req, 'Choose a file or paste JSON before importing.');
-    return render(req, res, 'examhub/staff/bulk_upload.html', base);
-  }
-
   let parseError = null;
   let totalRows = 0;
   try {
@@ -344,9 +337,57 @@ route(router, 'examhub:bulk_upload', async (req, res, { bank_pk }) => {
   else if (createdRows.length) messages.warning(req, `${createdRows.length} imported, ${errorRows.length} skipped — see details below.`);
   else if (errorRows.length) messages.error(req, `No questions imported — all ${errorRows.length} row(s) failed. See details below.`);
 
+  return (totalRows || parseError) ? { total_rows: totalRows, created_rows: createdRows, error_rows: errorRows, parse_error: parseError } : null;
+}
+
+route(router, 'examhub:bulk_upload', async (req, res, { bank_pk }) => {
+  if (!isTeacher(req)) return denied(req, res);
+  const bank = await getBank(bank_pk);
+  const base = { active: 'banks', bank, type_choices: Question.TYPE_CHOICES };
+  if (req.method !== 'POST') return render(req, res, 'examhub/staff/bulk_upload.html', base);
+  if (!hasUploadInput(req)) {
+    messages.error(req, 'Choose a file or paste JSON before importing.');
+    return render(req, res, 'examhub/staff/bulk_upload.html', base);
+  }
+  return render(req, res, 'examhub/staff/bulk_upload.html', { ...base, result: await importIntoBank(req, bank) });
+}, { login: true });
+
+/**
+ * Bulk upload straight from the sidebar/dashboard: pick an existing question
+ * bank or name a new one on the same page, then import — no need to find
+ * (or first create) a bank elsewhere.
+ */
+route(router, 'examhub:bulk_upload_start', async (req, res) => {
+  if (!isTeacher(req)) return denied(req, res);
+  const banks = QuestionBank.hydrateAll(await db.all('SELECT * FROM examhub_questionbank ORDER BY name'));
+  const subjects = Subject.hydrateAll(await db.all('SELECT * FROM catalog_subject WHERE is_active = 1 ORDER BY name'));
+  const base = {
+    active: 'bulk_upload', bank: null, banks, subjects, type_choices: Question.TYPE_CHOICES,
+    form: { bank_choice: req.GET.get('bank', banks.length ? String(banks[0].id) : 'new'), new_bank_name: '', subject: '' },
+  };
+  if (req.method !== 'POST') return render(req, res, 'examhub/staff/bulk_upload.html', base);
+
+  const choice = req.POST.get('bank_choice', 'new');
+  const newName = strip(req.POST.get('new_bank_name', ''));
+  const subjectId = intOrNull(req.POST.get('subject') || null);
+  const form = { bank_choice: choice, new_bank_name: newName, subject: String(subjectId || '') };
+  const again = (msg) => { messages.error(req, msg); return render(req, res, 'examhub/staff/bulk_upload.html', { ...base, form }); };
+
+  if (!hasUploadInput(req)) return again('Choose a file or paste JSON before importing.');
+  let bank;
+  if (choice === 'new') {
+    if (!newName) return again('Give the new question bank a name (e.g. "EPT 2024" or "Geology Past Questions").');
+    const id = await db.insert('examhub_questionbank', {
+      name: newName, description: '', subject_id: subjectId, created_by_id: req.user.id, created_at: new Date(),
+    });
+    bank = QuestionBank.hydrate(await db.one('SELECT * FROM examhub_questionbank WHERE id = ?', [id]));
+    messages.success(req, `Question bank "${newName}" created.`);
+  } else {
+    bank = QuestionBank.hydrate(await db.one('SELECT * FROM examhub_questionbank WHERE id = ?', [intOrNull(choice) ?? -1]));
+    if (!bank) return again('Choose a question bank, or pick "New bank" and give it a name.');
+  }
   return render(req, res, 'examhub/staff/bulk_upload.html', {
-    ...base,
-    result: (totalRows || parseError) ? { total_rows: totalRows, created_rows: createdRows, error_rows: errorRows, parse_error: parseError } : null,
+    active: 'bulk_upload', bank, type_choices: Question.TYPE_CHOICES, result: await importIntoBank(req, bank),
   });
 }, { login: true });
 

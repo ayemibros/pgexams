@@ -88,6 +88,7 @@ const URLS = {
   'examhub:question_edit': '/staff/banks/:bank_pk/questions/:pk/edit/',
   'examhub:question_delete': '/staff/banks/:bank_pk/questions/:pk/delete/',
   'examhub:bulk_upload': '/staff/banks/:bank_pk/bulk-upload/',
+  'examhub:bulk_upload_start': '/staff/bulk-upload/',
   'examhub:bulk_upload_template': '/staff/bulk-upload/template/:fmt/',
   'examhub:upload_asset': '/staff/upload-asset/',
   'examhub:staff_exam_list': '/staff/exams/',

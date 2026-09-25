@@ -2,6 +2,7 @@
 {% block nav %}
 <a href="{{ url('examhub:staff_dashboard') }}" class="nav-link {% if active == 'dashboard' %}active{% endif %}">🏠 Dashboard</a>
 <a href="{{ url('examhub:bank_list') }}" class="nav-link {% if active == 'banks' %}active{% endif %}">📚 Question Banks</a>
+<a href="{{ url('examhub:bulk_upload_start') }}" class="nav-link {% if active == 'bulk_upload' %}active{% endif %}">⬆️ Bulk Upload Questions</a>
 <a href="{{ url('examhub:staff_exam_list') }}" class="nav-link {% if active == 'exams' %}active{% endif %}">📝 Exams</a>
 {% if request.user.is_admin %}
 <div class="nav-sep">Admin</div>

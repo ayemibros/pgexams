@@ -10,6 +10,7 @@
     <div class="page-head-sub">{{ banks|length }} bank{{ banks|length|pluralize }}</div>
   </div>
   <div class="page-head-actions">
+    <a href="{{ url('examhub:bulk_upload_start') }}" class="btn btn-outline">⬆ Bulk Upload Questions</a>
     <a href="{{ url('examhub:bank_add') }}" class="btn btn-primary">+ New Bank</a>
   </div>
 </div>
@@ -46,7 +47,10 @@
     <div class="empty-pro-icon">📚</div>
     <div class="empty-pro-title">No question banks yet</div>
     <div class="empty-pro-sub">Create a bank to start adding questions — you can organize by subject however suits you.</div>
-    <a href="{{ url('examhub:bank_add') }}" class="btn btn-primary" style="margin-top:1rem">+ New Bank</a>
+    <div style="display:flex;gap:.5rem;justify-content:center;margin-top:1rem;flex-wrap:wrap">
+      <a href="{{ url('examhub:bulk_upload_start') }}" class="btn btn-primary">⬆ Bulk Upload Questions</a>
+      <a href="{{ url('examhub:bank_add') }}" class="btn btn-outline">+ New Bank</a>
+    </div>
   </div>
 </div>
 {% endif %}
