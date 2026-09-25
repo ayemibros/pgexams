@@ -11,7 +11,18 @@ const { URLS } = require('./urls');
 function createApp() {
   const app = express();
   app.disable('x-powered-by');
-  if (config.TRUST_PROXY) app.set('trust proxy', 1);
+  if (config.TRUST_PROXY || config.PUBLIC_URL) app.set('trust proxy', 1);
+
+  // Behind IIS (SmarterASP.NET) HTTPS ends before Node and no X-Forwarded-Proto
+  // header arrives, so Node would see every request as http — secure cookies
+  // would never be set and the HTTPS redirect would loop. With an https
+  // PUBLIC_URL, mark requests as HTTPS unless a proxy has said otherwise.
+  if (config.PUBLIC_URL.startsWith('https://')) {
+    app.use((req, res, next) => {
+      if (!req.headers['x-forwarded-proto']) req.headers['x-forwarded-proto'] = 'https';
+      next();
+    });
+  }
 
   // SecurityMiddleware + XFrameOptionsMiddleware equivalents.
   app.use((req, res, next) => {

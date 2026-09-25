@@ -34,6 +34,11 @@ module.exports = {
   PORT: /^\d+$/.test(env('PORT', '8000')) ? parseInt(env('PORT', '8000'), 10) : env('PORT', '8000'),
   HOST: env('HOST', '0.0.0.0'),
   TIME_ZONE: env('TIME_ZONE', 'Africa/Lagos'),
+  // The site's public address, e.g. https://pgexams.telifort.com — used for
+  // links sent to other services (the Paystack return URL). When it is https,
+  // every request is treated as HTTPS: hosts like SmarterASP.NET/IIS end TLS
+  // before Node and don't say so in a header.
+  PUBLIC_URL: env('PUBLIC_URL', '').replace(/\/+$/, ''),
 
   DB: {
     host: env('DB_HOST', '127.0.0.1'),

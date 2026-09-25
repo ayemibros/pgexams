@@ -341,7 +341,7 @@ async function startPayment(req, res, plan, { deletePlanOnAbort = false } = {}) 
   try {
     const data = await paystack.initializeTransaction({
       email: user.email, amountNaira: plan.price, reference,
-      callbackUrl: `${req.protocol}://${req.get('host')}${reverse('billing:checkout_callback')}`,
+      callbackUrl: `${config.PUBLIC_URL || `${req.protocol}://${req.get('host')}`}${reverse('billing:checkout_callback')}`,
       metadata: { student_id: user.id, plan_id: plan.id },
     });
     return res.redirect(302, data.authorization_url);

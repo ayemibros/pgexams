@@ -68,6 +68,7 @@ later price changes never affect past orders.
 | `SECRET_KEY` | dev value | Signs session cookies. Set a real one in production |
 | `DEBUG` | `True` | Shows error details and reloads templates on change |
 | `ONLINE_MODE` | `False` | HTTPS redirect, secure cookies, trust proxy |
+| `PUBLIC_URL` | *(empty)* | Live address, e.g. `https://pgexams.telifort.com`. Used for the Paystack return URL; also marks requests as HTTPS behind IIS/SmarterASP.NET, which doesn't forward that. Set it together with `ONLINE_MODE=True` |
 | `PAYSTACK_SECRET_KEY` / `PAYSTACK_PUBLIC_KEY` | *(empty)* | This client's Paystack account |
 | `PAYMENT_SIMULATION` | `False` | Local test payments (DEBUG only, no Paystack key) |
 | `TIME_ZONE` | `Africa/Lagos` | Display time zone. Datetimes are stored in UTC |
