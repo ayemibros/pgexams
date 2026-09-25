@@ -1,0 +1,39 @@
+{% extends "layout/staff_shell.html" %}
+{% block page_title %}New {{ role_label }}{% endblock %}
+{% block content %}
+<div class="card" style="max-width:520px;padding:1.5rem">
+  {% if created_user %}
+  <div class="msg msg-success" style="margin-bottom:1rem">{{ role_label }} account created.</div>
+  <div class="form-row">
+    <label class="form-label">Username</label>
+    <input type="text" class="form-input" value="{{ created_user.username }}" readonly>
+  </div>
+  <div class="form-row">
+    <label class="form-label">Temporary password</label>
+    <input type="text" class="form-input" value="{{ created_password }}" readonly style="font-family:ui-monospace,monospace;font-weight:700">
+    <div class="form-hint">Save this now — it's shown only once and isn't stored anywhere in plain text. The account must change it on first login.</div>
+  </div>
+  <a href="{{ url('accounts:account_list') }}" class="btn btn-primary">Back to Accounts</a>
+  <a href="{{ url('accounts:account_create', role=role) }}" class="btn btn-outline">+ Create Another</a>
+  {% else %}
+  <form method="post">
+    {{ csrf_input }}
+    <div class="form-row">
+      <label class="form-label">First name</label>
+      <input type="text" name="first_name" class="form-input" required>
+    </div>
+    <div class="form-row">
+      <label class="form-label">Last name</label>
+      <input type="text" name="last_name" class="form-input" required>
+    </div>
+    <div class="form-row">
+      <label class="form-label">Email</label>
+      <input type="email" name="email" class="form-input">
+    </div>
+    <div class="form-hint" style="margin-bottom:1rem">A username and temporary password will be generated automatically and shown once on the next screen.</div>
+    <button type="submit" class="btn btn-primary">Create {{ role_label }} Account</button>
+    <a href="{{ url('accounts:account_list') }}" class="btn btn-outline">Cancel</a>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

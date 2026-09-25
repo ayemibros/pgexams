@@ -1,0 +1,49 @@
+{% extends "layout/student_shell.html" %}
+{% block page_title %}Practice Mode{% endblock %}
+{% block content %}
+<style>
+.practice-card{max-width:480px;margin:0 auto;background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:1.75rem}
+.practice-head{margin-bottom:1.25rem}
+.practice-head h2{margin:0 0 .25rem;font-size:1.1rem;font-weight:900}
+.practice-head p{margin:0;font-size:.8125rem;color:#6b7280}
+</style>
+<div class="practice-card">
+  <div class="practice-head">
+    <h2>🎯 Practice Mode</h2>
+    <p>Build a custom practice set from the question banks — instant feedback after every answer.</p>
+  </div>
+
+  {% if error %}<div class="msg msg-error">{{ error }}</div>{% endif %}
+
+  <form method="post">
+    {{ csrf_input }}
+    <div class="form-row">
+      <label class="form-label">Subject (optional)</label>
+      <select name="subject_id" class="form-select">
+        <option value="">Any subject</option>
+        {% for s in subjects %}<option value="{{ s.pk }}">{{ s.icon }} {{ s.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="form-row">
+      <label class="form-label">Topic contains (optional)</label>
+      <input type="text" name="topic" class="form-input" placeholder="e.g. Algebra">
+    </div>
+    <div class="form-row">
+      <label class="form-label">Difficulty</label>
+      <select name="difficulty" class="form-select">
+        <option value="">Any difficulty</option>
+        {% for val, label in difficulty_choices %}<option value="{{ val }}">{{ label }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="form-row">
+      <label class="form-label">Number of questions</label>
+      <input type="number" name="num_questions" class="form-input" value="20" min="1" max="100">
+    </div>
+    <div class="form-row form-check">
+      <input type="checkbox" name="timed" value="1" id="timed" checked>
+      <label for="timed">Timed (≈2 minutes per question)</label>
+    </div>
+    <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:.75rem">Start Practice</button>
+  </form>
+</div>
+{% endblock %}

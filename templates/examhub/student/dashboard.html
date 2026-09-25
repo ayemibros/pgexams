@@ -1,0 +1,180 @@
+{% extends "layout/student_shell.html" %}
+{% block page_title %}Dashboard{% endblock %}
+{% block content %}
+<style>
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:1.5rem}
+.stat-card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:1.1rem 1.25rem}
+.stat-val{font-size:1.5rem;font-weight:900;color:#111827;line-height:1}
+.stat-lbl{font-size:.7rem;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-top:.3rem}
+.hero{background:linear-gradient(135deg,#111827,#1f2937);border-radius:16px;padding:1.5rem 1.75rem;color:#fff;margin-bottom:1.5rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem}
+.hero-profile{display:flex;align-items:center;gap:1rem}
+.hero-avatar{width:56px;height:56px;border-radius:16px;object-fit:cover;flex-shrink:0;box-shadow:0 4px 14px rgba(0,0,0,.3)}
+.hero-avatar-fallback{width:56px;height:56px;border-radius:16px;background:rgba(255,255,255,.12);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.15rem;font-weight:900;flex-shrink:0}
+.hero h2{margin:0 0 .25rem;font-size:1.15rem}
+.hero p{margin:0;opacity:.75;font-size:.8125rem}
+.row-card{display:flex;justify-content:space-between;align-items:center;padding:.85rem 1.1rem;border-top:1px solid #e5e7eb}
+.row-card:first-child{border-top:none}
+.dash-cols{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.5rem}
+@media(max-width:760px){.dash-cols{grid-template-columns:1fr}}
+.trend-card{padding:1.1rem 1.25rem}
+.trend-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.5rem}
+.trend-val{font-size:1.5rem;font-weight:900;color:#111827;line-height:1}
+.trend-delta{font-size:.72rem;font-weight:700;margin-top:.25rem}
+.trend-delta.up{color:#059669}
+.trend-delta.down{color:#e11d48}
+.subject-row{display:flex;align-items:center;gap:.6rem;padding:.5rem 1.1rem}
+.subject-name{font-size:.78rem;color:#374151;width:110px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.subject-bar-wrap{flex:1;height:8px;border-radius:99px;background:var(--surface2);overflow:hidden}
+.subject-bar{height:100%;border-radius:99px;background:#5b5ef4}
+.subject-pct{font-size:.75rem;font-weight:800;color:#111827;width:40px;text-align:right;flex-shrink:0}
+.live-banner{background:linear-gradient(135deg,#b45309,#f59e0b);border-radius:16px;padding:1.1rem 1.5rem;color:#fff;margin-bottom:1.5rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;box-shadow:0 8px 24px rgba(245,158,11,.3)}
+.live-banner-title{font-weight:900;font-size:.95rem;display:flex;align-items:center;gap:.5rem;margin-bottom:.3rem}
+.live-dot{width:8px;height:8px;border-radius:50%;background:#fff;animation:livepulse 1.4s infinite}
+@keyframes livepulse{0%,100%{opacity:1}50%{opacity:.3}}
+.live-list{display:flex;gap:.5rem;flex-wrap:wrap}
+.live-chip{background:rgba(255,255,255,.18);border-radius:8px;padding:.4rem .75rem;font-size:.75rem;font-weight:700;text-decoration:none;color:#fff}
+.school-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1rem;margin-bottom:1.5rem}
+@media(max-width:760px){.school-grid{grid-template-columns:1fr}}
+.school-card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:1.1rem 1.25rem;text-decoration:none;color:inherit;display:flex;align-items:center;gap:.85rem;transition:box-shadow .15s,transform .15s}
+.school-card:hover{box-shadow:var(--shadow-md);transform:translateY(-2px)}
+.school-card-icon{width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0}
+.school-card-title{font-weight:800;font-size:.85rem;color:#111827}
+.school-card-sub{font-size:.7rem;color:#9ca3af;margin-top:.1rem}
+.section-lbl{font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#9ca3af;margin:0 0 .6rem .1rem}
+</style>
+
+<div class="hero">
+  <div class="hero-profile">
+    {% if request.user.avatar %}<img src="{{ request.user.avatar.url }}" class="hero-avatar" alt="">{% else %}<div class="hero-avatar-fallback">{{ request.user.initials }}</div>{% endif %}
+    <div>
+      <h2>Welcome back, {{ request.user.first_name|default(request.user.username) }} 👋</h2>
+      <p>{% if upcoming_count %}{{ upcoming_count }} exam{{ upcoming_count|pluralize }} available{% else %}No exams available right now{% endif %}</p>
+    </div>
+  </div>
+  <a href="{{ url('examhub:exam_list') }}" class="btn btn-primary">📝 My Exams</a>
+</div>
+
+<style>
+.access-card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:1.1rem 1.25rem;margin-bottom:1.25rem}
+.access-head{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:.7rem}
+.access-title{font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#9ca3af}
+.access-link{font-size:.78rem;font-weight:700;color:#e11d48;text-decoration:none}
+.access-link:hover{text-decoration:underline}
+.access-chips{display:flex;flex-wrap:wrap;gap:.5rem}
+.access-chip{display:inline-flex;align-items:center;gap:.5rem;padding:.45rem .8rem;border-radius:10px;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.22);font-size:.8125rem;font-weight:700;color:#065f46}
+.access-chip small{font-weight:600;color:#059669;font-size:.72rem}
+.access-none{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;background:linear-gradient(135deg,rgba(225,29,72,.06),rgba(249,115,22,.06));border-color:rgba(225,29,72,.18)}
+.access-none b{display:block;font-size:.95rem;color:#111827}
+.access-none span{font-size:.8125rem;color:#6b7280}
+.access-lapsed{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;padding:.75rem 1rem;border-radius:12px;margin-bottom:1rem;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);color:#92400e;font-size:.8125rem;font-weight:600}
+</style>
+
+{% if not access_has_any %}
+<div class="access-card access-none">
+  <div><b>You don't have an active subscription</b><span>Subscribe to unlock{% if site_settings.shared_exam_short_name %} the {{ site_settings.shared_exam_short_name }} and{% endif %} your department's exams, with unlimited practice.</span></div>
+  <a href="{{ url('billing:plans_browse') }}" class="btn btn-primary">Subscribe Now!</a>
+</div>
+{% else %}
+{% if access_programmes %}
+<div class="access-card">
+  <div class="access-head">
+    <div class="access-title">Your programmes</div>
+    <a href="{{ url('billing:plans_browse') }}" class="access-link">Add a programme or renew</a>
+  </div>
+  <div class="access-chips">
+    {% for p in access_programmes %}<span class="access-chip">{{ p.bundle.name }}{% if p.until %} <small>until {{ p.until|date("d M Y") }}</small>{% endif %}</span>{% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endif %}
+{% for x in access_expired %}
+<div class="access-lapsed">
+  <span>Your access to <b>{{ x.bundle.name }}</b> ended on {{ x.ended|date("d M Y") }}.</span>
+  <a href="{{ url('billing:plans_browse') }}?programs={{ x.bundle.pk }}" class="btn btn-primary btn-sm">Renew</a>
+</div>
+{% endfor %}
+
+
+{% if live_exams or live_tests %}
+<div class="live-banner">
+  <div>
+    <div class="live-banner-title"><span class="live-dot"></span> {{ live_total_count }} item{{ live_total_count|pluralize }} open right now</div>
+    <div class="live-list">
+      {% for e in live_exams %}<a href="{{ url('examhub:exam_start', e.pk) }}" class="live-chip">📝 {{ e.title }}</a>{% endfor %}
+      {% for t in live_tests %}<a href="{{ url('examhub:exam_start', t.pk) }}" class="live-chip">🧪 {{ t.title }}</a>{% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="section-lbl">Quick Links</div>
+<div class="school-grid">
+  <a href="{{ url('examhub:exam_list') }}" class="school-card">
+    <div class="school-card-icon" style="background:rgba(225,29,72,.1)">📝</div>
+    <div><div class="school-card-title">My Exams</div><div class="school-card-sub">{% if site_settings.shared_exam_short_name %}{{ site_settings.shared_exam_short_name }} and {% endif %}your department, by year</div></div>
+  </a>
+  <a href="{{ url('examhub:student_results') }}" class="school-card">
+    <div class="school-card-icon" style="background:rgba(91,94,244,.1)">📊</div>
+    <div><div class="school-card-title">My Results</div><div class="school-card-sub">Every attempt, tracked</div></div>
+  </a>
+</div>
+
+<div class="stat-grid">
+  <div class="stat-card"><div class="stat-val">{{ upcoming_count }}</div><div class="stat-lbl">Available Exams</div></div>
+  <div class="stat-card"><div class="stat-val">{{ total_attempts }}</div><div class="stat-lbl">Attempts Completed</div></div>
+  <div class="stat-card"><div class="stat-val">{% if avg_score %}{{ avg_score|floatformat(1) }}%{% else %}—{% endif %}</div><div class="stat-lbl">Average Score</div></div>
+</div>
+
+{% if trend_svg or subject_stats %}
+<div class="dash-cols">
+  {% if trend_svg %}
+  <div class="card trend-card">
+    <div class="trend-head">
+      <div>
+        <div class="stat-lbl" style="margin-bottom:.3rem">Recent Performance</div>
+        <div class="trend-val">{{ latest_score|floatformat(0) }}%</div>
+        {% if score_delta != none %}
+        <div class="trend-delta {% if score_delta >= 0 %}up{% else %}down{% endif %}">{% if score_delta >= 0 %}▲{% else %}▼{% endif %} {{ score_delta|floatformat(1) }} pts vs previous</div>
+        {% endif %}
+      </div>
+      {{ trend_svg|safe }}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if subject_stats %}
+  <div class="card" style="padding-bottom:.5rem">
+    <div class="stat-lbl" style="padding:1.1rem 1.1rem 0">Performance by Subject</div>
+    <div style="padding-top:.75rem">
+      {% for s in subject_stats %}
+      <div class="subject-row">
+        <div class="subject-name" title="{{ s.exam__subject__name }}">{{ s.exam__subject__icon }} {{ s.exam__subject__name }}</div>
+        <div class="subject-bar-wrap"><div class="subject-bar" style="width:{{ s.avg }}%"></div></div>
+        <div class="subject-pct">{{ s.avg|floatformat(0) }}%</div>
+      </div>
+      {% endfor %}
+    </div>
+    <div style="height:.5rem"></div>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+<div class="card" style="margin-bottom:1.5rem">
+  <div style="padding:1rem 1.1rem .5rem;font-weight:800;font-size:.85rem">Recent Attempts</div>
+  {% for a in attempts %}
+  <div class="row-card">
+    <div>
+      <div style="font-weight:700;font-size:.85rem">{{ a.exam.title }}</div>
+      <div style="font-size:.75rem;color:#9ca3af">{{ a.completed_at|date("d M Y, H:i") }}</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:.6rem">
+      <span class="pill {% if a.passed %}pill-green{% else %}pill-red{% endif %}">{{ a.score_pct|floatformat("-2") }}%</span>
+      <a href="{{ url('examhub:exam_results', a.pk) }}" class="btn btn-outline btn-sm">View</a>
+    </div>
+  </div>
+  {% else %}
+  <div class="empty">No attempts yet.</div>
+  {% endfor %}
+</div>
+{% endblock %}

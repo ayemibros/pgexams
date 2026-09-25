@@ -1,0 +1,113 @@
+{% extends "layout/staff_shell.html" %}
+{% block page_title %}Dashboard{% endblock %}
+{% block content %}
+<style>
+.hero-pro{background:linear-gradient(135deg,#111827,#1f2937);border-radius:16px;padding:1.5rem 1.75rem;color:#fff;margin-bottom:1.5rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;position:relative;overflow:hidden}
+.hero-pro::after{content:'';position:absolute;right:-60px;top:-60px;width:220px;height:220px;border-radius:50%;background:rgba(255,255,255,.06)}
+.hero-pro h2{margin:0 0 .3rem;font-size:1.2rem;position:relative}
+.hero-pro p{margin:0;opacity:.7;font-size:.8125rem;position:relative}
+.row-card{display:flex;justify-content:space-between;align-items:center;padding:.9rem 1.1rem;border-top:1px solid #f1f2f4;gap:.75rem}
+.row-card:first-child{border-top:none}
+.row-card:hover{background:var(--surface)}
+.row-avatar{width:32px;height:32px;border-radius:9px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800;color:#6b7280;flex-shrink:0}
+.quick-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;margin-bottom:1.5rem}
+.quick-card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:1.1rem 1.25rem;text-decoration:none;display:flex;align-items:center;gap:.9rem;box-shadow:var(--shadow-sm);transition:all .15s}
+.quick-card:hover{box-shadow:var(--shadow-md);transform:translateY(-2px);border-color:var(--accent)}
+.quick-card-title{font-weight:800;font-size:.85rem;color:#111827}
+.quick-card-sub{font-size:.72rem;color:#9ca3af;margin-top:.15rem}
+.section-title{font-weight:800;font-size:.85rem;color:#111827;padding:1.05rem 1.1rem .3rem}
+</style>
+
+<div class="hero-pro">
+  <div>
+    <h2>Welcome back, {{ request.user.first_name|default(request.user.username) }} 👋</h2>
+    <p>{% if pending_grading %}{{ pending_grading }} theory answer{{ pending_grading|pluralize }} waiting to be graded{% else %}Everything's graded — nice and tidy.{% endif %}</p>
+  </div>
+  <div class="page-head-actions">
+    <a href="{{ url('examhub:exam_add') }}" class="btn btn-primary">+ New Exam</a>
+    <a href="{{ url('examhub:bank_add') }}" class="btn btn-outline" style="background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.2);color:#fff">+ New Bank</a>
+  </div>
+</div>
+
+<div class="stat-pro-grid">
+  <div class="stat-pro"><div class="icon-chip" style="background:rgba(91,94,244,.1)">📚</div><div><div class="stat-pro-val">{{ bank_count }}</div><div class="stat-pro-lbl">Question Banks</div></div></div>
+  <div class="stat-pro"><div class="icon-chip" style="background:rgba(16,185,129,.1)">❓</div><div><div class="stat-pro-val">{{ question_count }}</div><div class="stat-pro-lbl">Questions</div></div></div>
+  <div class="stat-pro"><div class="icon-chip" style="background:rgba(245,158,11,.1)">📝</div><div><div class="stat-pro-val">{{ exam_count }}</div><div class="stat-pro-lbl">Exams</div></div></div>
+  <div class="stat-pro"><div class="icon-chip" style="background:rgba(225,29,72,.09)">✓</div><div><div class="stat-pro-val">{{ published_count }}</div><div class="stat-pro-lbl">Published</div></div></div>
+  <div class="stat-pro"><div class="icon-chip" style="background:{% if pending_grading %}rgba(245,158,11,.15){% else %}var(--surface2){% endif %}">🖊️</div><div><div class="stat-pro-val" style="color:{% if pending_grading %}#d97706{% else %}#111827{% endif %}">{{ pending_grading }}</div><div class="stat-pro-lbl">Pending Grading</div></div></div>
+</div>
+
+{% if platform_stats %}
+<div class="section-title" style="padding-left:0;margin-bottom:.6rem">🛡️ Platform Overview <span style="font-weight:600;color:#9ca3af;text-transform:none;font-size:.7rem">(Super Admin only)</span></div>
+<div class="stat-pro-grid">
+  <div class="stat-pro"><div class="icon-chip" style="background:rgba(91,94,244,.1)">🎓</div><div><div class="stat-pro-val">{{ platform_stats.total_students }}</div><div class="stat-pro-lbl">Students</div></div></div>
+  <div class="stat-pro"><div class="icon-chip" style="background:rgba(16,185,129,.1)">🧑‍🏫</div><div><div class="stat-pro-val">{{ platform_stats.total_staff }}</div><div class="stat-pro-lbl">Staff / Lecturers</div></div></div>
+  <div class="stat-pro"><div class="icon-chip" style="background:rgba(245,158,11,.1)">🛠️</div><div><div class="stat-pro-val">{{ platform_stats.total_admins }}</div><div class="stat-pro-lbl">Admins</div></div></div>
+  <div class="stat-pro"><div class="icon-chip" style="background:rgba(91,94,244,.1)">💳</div><div><div class="stat-pro-val">{{ platform_stats.active_subscriptions }}</div><div class="stat-pro-lbl">Active Subscriptions</div></div></div>
+  <div class="stat-pro"><div class="icon-chip" style="background:rgba(16,185,129,.1)">💰</div><div><div class="stat-pro-val">₦{{ platform_stats.total_revenue|floatformat(0)|intcomma }}</div><div class="stat-pro-lbl">Total Revenue</div></div></div>
+</div>
+
+<div class="quick-grid">
+  <div class="card">
+    <div class="section-title">Recent Signups</div>
+    {% for s in platform_stats.recent_signups %}
+    <div class="row-card">
+      <div style="display:flex;align-items:center;gap:.75rem">
+        <div class="row-avatar">{{ s.first_name|slice(":1") }}{{ s.last_name|slice(":1") }}</div>
+        <div>
+          <div style="font-weight:700;font-size:.85rem">{{ s.get_full_name|default(s.username) }}</div>
+          <div style="font-size:.75rem;color:#9ca3af">{{ s.created_at|date("d M Y") }}</div>
+        </div>
+      </div>
+    </div>
+    {% else %}
+    <div class="empty-pro"><div class="empty-pro-sub">No students yet.</div></div>
+    {% endfor %}
+  </div>
+  <div class="card">
+    <div class="section-title">Recent Payments</div>
+    {% for p in platform_stats.recent_payments %}
+    <div class="row-card">
+      <div style="display:flex;align-items:center;gap:.75rem">
+        <div class="row-avatar">{{ p.student.first_name|slice(":1") }}{{ p.student.last_name|slice(":1") }}</div>
+        <div>
+          <div style="font-weight:700;font-size:.85rem">{{ p.student.get_full_name|default(p.student.username) }}</div>
+          <div style="font-size:.75rem;color:#9ca3af">{{ p.plan.name }} &bull; {{ p.verified_at|date("d M Y") }}</div>
+        </div>
+      </div>
+      <span class="pill pill-green">₦{{ p.amount|floatformat(0)|intcomma }}</span>
+    </div>
+    {% else %}
+    <div class="empty-pro"><div class="empty-pro-sub">No payments yet.</div></div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<div class="quick-grid">
+  <a href="{{ url('examhub:bank_list') }}" class="quick-card"><div class="icon-chip" style="background:rgba(91,94,244,.1)">📚</div><div><div class="quick-card-title">Manage Question Banks</div><div class="quick-card-sub">Author, tag, and organize questions</div></div></a>
+  <a href="{{ url('examhub:staff_exam_list') }}" class="quick-card"><div class="icon-chip" style="background:rgba(245,158,11,.1)">📝</div><div><div class="quick-card-title">Build &amp; Publish Exams</div><div class="quick-card-sub">Sections, timing, integrity rules</div></div></a>
+</div>
+
+<div class="card">
+  <div class="section-title">Recent Attempts</div>
+  {% for a in recent_attempts %}
+  <div class="row-card">
+    <div style="display:flex;align-items:center;gap:.75rem">
+      <div class="row-avatar">{{ a.student.first_name|slice(":1") }}{{ a.student.last_name|slice(":1") }}</div>
+      <div>
+        <div style="font-weight:700;font-size:.85rem">{{ a.student.get_full_name|default(a.student.username) }}</div>
+        <div style="font-size:.75rem;color:#9ca3af">{{ a.exam.title }} &bull; {{ a.completed_at|date("d M Y, H:i") }}</div>
+      </div>
+    </div>
+    <span class="pill {% if a.passed %}pill-green{% else %}pill-red{% endif %}">{{ a.score_pct|floatformat("-2") }}%</span>
+  </div>
+  {% else %}
+  <div class="empty-pro">
+    <div class="empty-pro-icon">📭</div>
+    <div class="empty-pro-title">No attempts recorded yet</div>
+    <div class="empty-pro-sub">Once students start sitting exams, their results will show up here.</div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

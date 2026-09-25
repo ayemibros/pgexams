@@ -1,0 +1,113 @@
+{% extends "layout/student_shell.html" %}
+{% block page_title %}Review — {{ exam.title }}{% endblock %}
+{% block content %}
+<style>
+.rev-header{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:18px 22px;margin-bottom:18px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.rev-score-pill{padding:6px 14px;border-radius:20px;font-size:14px;font-weight:900}
+.rev-score-pill.passed{background:rgba(16,185,129,.12);color:#059669}
+.rev-score-pill.failed{background:rgba(225,29,72,.1);color:#e11d48}
+.rev-row{background:#fff;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:10px;overflow:hidden}
+.rev-hd{display:flex;align-items:flex-start;gap:12px;padding:14px 18px;cursor:pointer;user-select:none}
+.rev-badge{width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0;margin-top:1px}
+.rev-badge.correct{background:rgba(16,185,129,.12);color:#059669}
+.rev-badge.wrong{background:rgba(225,29,72,.1);color:#e11d48}
+.rev-badge.partial{background:rgba(245,158,11,.1);color:#d97706}
+.rev-badge.skip{background:rgba(107,114,128,.1);color:#6b7280}
+.rev-stem{font-size:13px;color:#111827;line-height:1.6;flex:1}
+.rev-pts{font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;background:#f4f4f8;color:#6b7280;white-space:nowrap;flex-shrink:0}
+.rev-bd{padding:0 18px 16px;border-top:1px solid #e5e7eb;display:none}
+.rev-bd.open{display:block}
+.rev-choice-row{display:flex;align-items:flex-start;gap:8px;margin-top:8px;font-size:12.5px}
+.rev-dot{width:8px;height:8px;border-radius:50%;margin-top:4px;flex-shrink:0}
+.rev-exp{margin-top:12px;padding:10px 14px;background:rgba(91,94,244,.06);border:1px solid rgba(91,94,244,.15);border-radius:8px;font-size:12px;color:#111827;line-height:1.7}
+.rev-exp-lbl{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:#5b5ef4;margin-bottom:4px}
+</style>
+
+<div class="rev-header">
+  <div style="flex:1">
+    <div style="font-size:15px;font-weight:900;color:#111827">{{ exam.title }}</div>
+    <div style="font-size:12px;color:#6b7280;margin-top:2px">{{ exam.subject.name|default("General") }}</div>
+  </div>
+  <span class="rev-score-pill {% if attempt.passed %}passed{% else %}failed{% endif %}">{{ attempt.score_pct|floatformat("-2") }}%</span>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <a href="{{ url('examhub:exam_results', attempt.pk) }}" style="font-size:12px;font-weight:700;color:#5b5ef4;text-decoration:none">← Results</a>
+    <a href="{{ url(list_url_name) }}" style="font-size:12px;font-weight:700;color:#6b7280;text-decoration:none">{{ list_label }}</a>
+  </div>
+</div>
+
+{% for aa in answers %}
+{% set q = aa.exam_question %}{% set qtype = aa.exam_question.eff_type %}
+<div class="rev-row">
+  <div class="rev-hd" onclick="toggleRevBd({{ loop.index }})">
+    <span class="rev-badge {% if aa.is_correct %}correct{% elif aa.effective_score > 0 %}partial{% elif not aa.text_answer and not aa.selected_indices and aa.numeric_answer == none and not aa.answer_data %}skip{% else %}wrong{% endif %}">
+      {% if aa.is_correct %}✓{% elif aa.effective_score > 0 %}~{% elif not aa.text_answer and not aa.selected_indices and aa.numeric_answer == none and not aa.answer_data %}—{% else %}✗{% endif %}
+    </span>
+    <div class="rev-stem"><span style="font-size:10px;font-weight:700;text-transform:uppercase;color:#6b7280;margin-right:6px">Q{{ loop.index }}</span>{{ q.eff_stem|striptags|truncatechars(120) }}</div>
+    <span class="rev-pts">{{ aa.effective_score|floatformat(1) }}/{{ q.points|floatformat(1) }}pts</span>
+    <svg style="width:14px;height:14px;color:#6b7280;flex-shrink:0;margin-top:4px;transition:transform .2s" id="chev-{{ loop.index }}" viewBox="0 0 20 20" fill="currentColor">
+      <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+    </svg>
+  </div>
+  <div class="rev-bd" id="revbd-{{ loop.index }}">
+    <div style="font-size:13.5px;color:#111827;line-height:1.7;padding-top:12px;margin-bottom:12px">{{ q.eff_stem|safe }}</div>
+    {% if q.eff_stem_image_url %}<img src="{{ q.eff_stem_image_url }}" style="max-width:100%;border-radius:8px;margin-bottom:12px" loading="lazy">{% endif %}
+
+    {% if qtype == "mcq_single" or qtype == "mcq_multi" %}
+      {% for choice in q.eff_choices_data %}
+      <div class="rev-choice-row">
+        <span class="rev-dot" style="background:{% if choice.is_correct %}#10b981{% elif loop.index0 in aa.selected_indices and not choice.is_correct %}#e11d48{% else %}#d1d5db{% endif %}"></span>
+        <span style="color:{% if choice.is_correct %}#059669{% elif loop.index0 in aa.selected_indices and not choice.is_correct %}#e11d48{% else %}#111827{% endif %}">
+          {{ choice.text|safe }}
+          {% if choice.is_correct %}<span style="font-size:10px;font-weight:700;margin-left:4px">(Correct)</span>{% endif %}
+          {% if loop.index0 in aa.selected_indices and not choice.is_correct %}<span style="font-size:10px;font-weight:700;margin-left:4px">(Your answer)</span>{% endif %}
+          {% if loop.index0 in aa.selected_indices and choice.is_correct %}<span style="font-size:10px;font-weight:700;margin-left:4px">(Your answer ✓)</span>{% endif %}
+        </span>
+      </div>
+      {% endfor %}
+    {% elif qtype == "true_false" %}
+      {% set tf = aa.answer_data %}
+      <div style="font-size:12.5px;color:#6b7280">Your answer: <strong style="color:#111827">{% if tf and tf.tf %}True{% elif tf %}False{% else %}Not answered{% endif %}</strong></div>
+      <div style="font-size:12.5px;color:#10b981;margin-top:4px">Correct: <strong>{% if q.eff_tf_answer %}True{% else %}False{% endif %}</strong></div>
+      
+    {% elif qtype == "fill_blank" %}
+      {% set bdata = aa.answer_data %}
+      <div style="font-size:12.5px;color:#6b7280;margin-bottom:6px">Your answers:</div>
+      {% for accepted in q.eff_blank_answers %}
+      <div style="font-size:12.5px;margin-bottom:4px">Blank {{ loop.index }}: <strong>{% if bdata and bdata.blanks %}{{ bdata.blanks|join(", ") }}{% else %}—{% endif %}</strong> &nbsp;&rarr;&nbsp; <span style="color:#10b981">Accept: {{ accepted|join(" / ") }}</span></div>
+      {% endfor %}
+      
+    {% elif qtype == "numeric" %}
+      <div style="font-size:12.5px;color:#6b7280">Your answer: <strong style="color:#111827">{% if aa.numeric_answer %}{{ aa.numeric_answer }} {{ q.eff_numeric_unit }}{% else %}Not answered{% endif %}</strong></div>
+      <div style="font-size:12.5px;color:#10b981;margin-top:4px">Correct: <strong>{{ q.eff_numeric_answer }} {{ q.eff_numeric_unit }}</strong>{% if q.eff_numeric_tolerance %} <span style="color:#6b7280">(±{{ q.eff_numeric_tolerance }})</span>{% endif %}</div>
+    {% elif qtype == "theory" %}
+      <div style="font-size:12.5px;color:#6b7280;margin-bottom:4px">Your essay:</div>
+      <div style="background:#f8f8fb;border-radius:8px;padding:10px 14px;font-size:12.5px;color:#111827;line-height:1.7;white-space:pre-wrap">{{ aa.text_answer|default("(No answer)") }}</div>
+      {% if aa.instructor_feedback %}<div style="font-size:12px;color:#5b5ef4;margin-top:8px"><strong>Feedback:</strong> {{ aa.instructor_feedback }}</div>{% endif %}
+      {% if aa.manual_score != none %}<div style="font-size:12px;color:#059669;margin-top:4px"><strong>Manual Score:</strong> {{ aa.manual_score }}/{{ q.points }}</div>{% endif %}
+    {% elif qtype == "match" %}
+      <div style="font-size:12.5px;color:#6b7280">Match pairs — score: {% if aa.is_correct %}✓ Correct{% else %}✗ Incorrect{% endif %}</div>
+    {% elif qtype == "order" %}
+      <div style="font-size:12px;color:#10b981;margin-top:8px"><strong>Correct order:</strong> {{ q.eff_order_items|join(" → ") }}</div>
+    {% elif qtype == "category" %}
+      <div style="font-size:12.5px;color:#6b7280">Category drag — score: {% if aa.is_correct %}✓ Correct{% else %}✗ Incorrect{% endif %}</div>
+    {% endif %}
+
+    {% if q.eff_explanation %}<div class="rev-exp"><div class="rev-exp-lbl">Explanation</div>{{ q.eff_explanation|safe }}</div>{% endif %}
+  </div>
+</div>
+
+{% endfor %}
+
+<div style="margin-top:18px;display:flex;gap:10px">
+  <a href="{{ url('examhub:exam_results', attempt.pk) }}" style="display:inline-flex;align-items:center;gap:5px;padding:9px 18px;border-radius:8px;font-size:12px;font-weight:700;background:#e11d48;color:#fff;text-decoration:none">← Back to Results</a>
+</div>
+
+<script>
+function toggleRevBd(n) {
+  const bd = document.getElementById('revbd-' + n);
+  const chev = document.getElementById('chev-' + n);
+  const open = bd.classList.toggle('open');
+  chev.style.transform = open ? 'rotate(180deg)' : '';
+}
+</script>
+{% endblock %}

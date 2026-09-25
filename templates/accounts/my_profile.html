@@ -1,0 +1,39 @@
+{% extends shell_template %}
+{% block page_title %}My Profile{% endblock %}
+{% block content %}
+<style>
+.profile-header{display:flex;align-items:center;gap:1.25rem;margin-bottom:1.5rem;flex-wrap:wrap}
+.profile-avatar-lg{width:84px;height:84px;border-radius:20px;object-fit:cover;box-shadow:var(--shadow-md)}
+.profile-avatar-fallback{width:84px;height:84px;border-radius:20px;background:linear-gradient(135deg,#5b5ef4,#8b5cf6);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.75rem;font-weight:900;box-shadow:var(--shadow-md)}
+.profile-name{font-size:1.25rem;font-weight:900;color:#111827}
+.profile-meta{font-size:.8125rem;color:#6b7280;margin-top:.2rem}
+</style>
+
+<div class="profile-header">
+  {% if person.avatar %}<img src="{{ person.avatar.url }}" class="profile-avatar-lg" alt="">{% else %}<div class="profile-avatar-fallback">{{ person.initials }}</div>{% endif %}
+  <div>
+    <div class="profile-name">{{ person.get_full_name|default(person.username) }}</div>
+    <div class="profile-meta">{{ person.get_role_display }}</div>
+    {% if person.registration_number %}<div class="profile-meta">Reg No: {{ person.registration_number }}</div>{% endif %}
+  </div>
+</div>
+
+<div class="card" style="max-width:480px;padding:1.5rem;margin-bottom:1.25rem">
+  <form method="post" enctype="multipart/form-data">
+    {{ csrf_input }}
+    <div class="form-row">
+      <label class="form-label">Profile picture</label>
+      <input type="file" name="avatar" accept="image/*" class="form-input">
+    </div>
+    <div class="form-row">
+      <label class="form-label">Phone</label>
+      <input type="text" name="phone" class="form-input" value="{{ person.phone|default('') }}">
+    </div>
+    <div class="form-row">
+      <label class="form-label">Date of birth</label>
+      <input type="date" name="date_of_birth" class="form-input" value="{{ person.date_of_birth|date('Y-m-d')|default('') }}">
+    </div>
+    <button type="submit" class="btn btn-primary">Save Profile</button>
+  </form>
+</div>
+{% endblock %}

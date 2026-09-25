@@ -1,0 +1,132 @@
+{% extends "layout/student_shell.html" %}
+{% block page_title %}Results — {{ exam.title }}{% endblock %}
+{% block content %}
+<style>
+.res-hero{background:#fff;border:1px solid #e5e7eb;border-radius:18px;overflow:hidden;margin-bottom:1.25rem}
+.res-hero-banner{padding:1.5rem 2rem 1.25rem;display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap}
+.res-hero-banner.passed{background:linear-gradient(135deg,#ecfdf5,#f0fdf4)}
+.res-hero-banner.partial{background:linear-gradient(135deg,#fffbeb,#fefce8)}
+.res-hero-banner.failed{background:linear-gradient(135deg,#fff1f2,#fff5f5)}
+.res-ring-wrap{position:relative;width:120px;height:120px;flex-shrink:0}
+.res-ring-wrap svg{width:120px;height:120px;transform:rotate(-90deg)}
+.res-ring-bg{fill:none;stroke:#e5e7eb;stroke-width:11}
+.res-ring-fg{fill:none;stroke-width:11;stroke-linecap:round;transition:stroke-dashoffset 1.3s cubic-bezier(.4,0,.2,1)}
+.res-ring-text{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.res-score-pct{font-size:1.625rem;font-weight:900;color:#111827;line-height:1}
+.res-score-lbl{font-size:.625rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#9ca3af;margin-top:.2rem}
+.res-grade{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.25rem;font-weight:900;flex-shrink:0}
+.res-status-pill{display:inline-flex;align-items:center;gap:.4rem;padding:.375rem 1rem;border-radius:99px;font-size:.8125rem;font-weight:800;margin-bottom:.625rem}
+.res-status-passed{background:rgba(16,185,129,.15);color:#059669}
+.res-status-partial{background:rgba(245,158,11,.12);color:#d97706}
+.res-status-failed{background:rgba(225,29,72,.12);color:#e11d48}
+.res-title{font-size:1rem;font-weight:900;color:#111827;margin-bottom:.25rem}
+.res-sub{font-size:.8125rem;color:#6b7280}
+.res-motivation{padding:.875rem 1.5rem;border-top:1px solid rgba(0,0,0,.05);font-size:.875rem;color:#374151;text-align:center}
+.res-kpis{display:flex;gap:.875rem;flex-wrap:wrap;margin-bottom:1.25rem}
+.res-kpi-card{flex:1;min-width:90px;background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:.875rem .75rem;text-align:center}
+.res-kpi-val{font-size:1.25rem;font-weight:900;color:#111827;line-height:1}
+.res-kpi-lbl{font-size:.625rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9ca3af;margin-top:.3rem}
+.res-analysis{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.25rem}
+@media(max-width:560px){.res-analysis{grid-template-columns:1fr}}
+.stat-card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:1.125rem 1.25rem}
+.stat-title{font-size:.6875rem;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:#9ca3af;margin-bottom:.875rem}
+.topic-row{display:flex;align-items:center;gap:.625rem;margin-bottom:.625rem}
+.topic-name{font-size:.75rem;color:#374151;min-width:80px;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.topic-bar-wrap{flex:1;height:6px;background:#e5e7eb;border-radius:99px;overflow:hidden}
+.topic-bar{height:100%;border-radius:99px;background:#5b5ef4}
+.topic-pct{font-size:.6875rem;color:#9ca3af;min-width:34px;text-align:right}
+.res-actions{display:flex;gap:.75rem;flex-wrap:wrap}
+.res-btn{display:inline-flex;align-items:center;gap:.4rem;padding:.625rem 1.25rem;border-radius:9px;font-size:.8125rem;font-weight:700;text-decoration:none;white-space:nowrap}
+.res-btn-primary{background:linear-gradient(135deg,#e11d48,#f97316);color:#fff}
+.res-btn-outline{background:#fff;color:#374151;border:1.5px solid #e5e7eb}
+</style>
+
+<div class="res-hero">
+  <div class="res-hero-banner {% if attempt.passed %}passed{% elif attempt.score_pct >= 50 %}partial{% else %}failed{% endif %}">
+    <div class="res-ring-wrap">
+      <svg viewBox="0 0 120 120">
+        <circle class="res-ring-bg" cx="60" cy="60" r="50"/>
+        <circle class="res-ring-fg" id="ringFg" cx="60" cy="60" r="50"
+                stroke="{% if attempt.passed %}#10b981{% elif attempt.score_pct >= 50 %}#f59e0b{% else %}#e11d48{% endif %}"
+                stroke-dasharray="314.16" stroke-dashoffset="314.16"/>
+      </svg>
+      <div class="res-ring-text"><div class="res-score-pct">{{ attempt.score_pct|floatformat("-2") }}%</div><div class="res-score-lbl">Score</div></div>
+    </div>
+    <div class="res-grade"
+         style="background:{% if attempt.score_pct >= 70 %}#d1fae5{% elif attempt.score_pct >= 60 %}#dbeafe{% elif attempt.score_pct >= 50 %}#fef3c7{% elif attempt.score_pct >= 40 %}#fee2e2{% else %}#fce7f3{% endif %};
+                color:{% if attempt.score_pct >= 70 %}#065f46{% elif attempt.score_pct >= 60 %}#1e40af{% elif attempt.score_pct >= 50 %}#92400e{% elif attempt.score_pct >= 40 %}#991b1b{% else %}#831843{% endif %}">
+      {% if attempt.score_pct >= 70 %}A{% elif attempt.score_pct >= 60 %}B{% elif attempt.score_pct >= 50 %}C{% elif attempt.score_pct >= 40 %}D{% else %}F{% endif %}
+    </div>
+    <div style="flex:1;min-width:160px">
+      <span class="res-status-pill {% if attempt.passed %}res-status-passed{% elif attempt.score_pct >= 50 %}res-status-partial{% else %}res-status-failed{% endif %}">
+        {% if attempt.passed %}✓ Passed{% elif attempt.score_pct >= 50 %}~ Close{% else %}✗ Not Passed{% endif %}
+      </span>
+      <div class="res-title">{{ exam.title }}</div>
+      <div class="res-sub">{{ exam.subject.name|default("General") }}</div>
+    </div>
+  </div>
+  <div class="res-motivation">
+    {% if attempt.score_pct >= 70 %}🎉 Brilliant! You've mastered this exam.
+    {% elif attempt.score_pct >= 60 %}👏 Great effort — a strong performance!
+    {% elif attempt.score_pct >= 50 %}💪 Not bad. A little more practice will get you there.
+    {% elif attempt.score_pct >= 40 %}📖 Keep going — review your weak topics and retake.
+    {% else %}🔥 Don't give up. Study the explanations carefully and try again!
+    {% endif %}
+  </div>
+</div>
+
+<div class="res-kpis">
+  <div class="res-kpi-card"><div class="res-kpi-val" style="color:#10b981">{{ correct_count }}</div><div class="res-kpi-lbl">Correct</div></div>
+  <div class="res-kpi-card"><div class="res-kpi-val" style="color:#e11d48">{{ wrong_count }}</div><div class="res-kpi-lbl">Wrong</div></div>
+  <div class="res-kpi-card"><div class="res-kpi-val" style="color:#9ca3af">{{ skipped_count }}</div><div class="res-kpi-lbl">Skipped</div></div>
+  <div class="res-kpi-card"><div class="res-kpi-val">{{ elapsed_fmt }}</div><div class="res-kpi-lbl">Time</div></div>
+</div>
+
+{% if section_stats or topic_stats %}
+<div class="res-analysis">
+  {% if section_stats %}
+  <div class="stat-card">
+    <div class="stat-title">By Section</div>
+    {% for sec, stats in section_stats %}
+    <div style="margin-bottom:.875rem">
+      <div style="display:flex;justify-content:space-between;font-size:.75rem;font-weight:700;color:#374151;margin-bottom:.375rem"><span>{{ sec }}</span><span style="color:#9ca3af">{{ stats.earned|floatformat(1) }}/{{ stats.max|floatformat(0) }}</span></div>
+      <div class="topic-bar-wrap"><div class="topic-bar" style="width:{% if stats.max %}{{ widthratio(stats.earned, stats.max, 100) }}{% else %}0{% endif %}%"></div></div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% if topic_stats %}
+  <div class="stat-card">
+    <div class="stat-title">By Topic</div>
+    {% for topic, stats in topic_stats %}
+    <div class="topic-row">
+      <div class="topic-name" title="{{ topic }}">{{ topic }}</div>
+      <div class="topic-bar-wrap"><div class="topic-bar" style="width:{% if stats.total %}{{ widthratio(stats.correct, stats.total, 100) }}{% else %}0{% endif %}%"></div></div>
+      <div class="topic-pct">{{ stats.correct }}/{{ stats.total }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+{% if attempt.has_ungraded_theory %}
+<div class="msg msg-warning"><strong>Pending Grading:</strong> Your essay/theory answers are awaiting manual review. Your final score will update once graded.</div>
+{% endif %}
+
+<div class="res-actions">
+  {% if show_review %}<a href="{{ url('examhub:exam_review', attempt.pk) }}" class="res-btn res-btn-primary">Review Answers</a>{% endif %}
+  <a href="{{ url(list_url_name) }}" class="res-btn res-btn-outline">← Back to {{ list_label }}</a>
+</div>
+
+<script>
+(function(){
+  var fg = document.getElementById('ringFg');
+  if(!fg) return;
+  var circ = 2 * Math.PI * 50;
+  var score = {{ attempt.score_pct|floatformat("-2") }};
+  var offset = circ - (score / 100) * circ;
+  requestAnimationFrame(function(){ fg.style.strokeDashoffset = offset; });
+})();
+</script>
+{% endblock %}

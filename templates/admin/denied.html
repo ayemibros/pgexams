@@ -1,0 +1,8 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<h1>Not authorised</h1>
+<div class="card" style="padding:1.25rem">
+  <p>You are signed in as <strong>{{ request.user.username }}</strong>, but that account isn't authorised to use the admin console. Sign in with a staff account (for example the platform superuser).</p>
+  <a href="/" class="btn">Back to the site</a>
+</div>
+{% endblock %}

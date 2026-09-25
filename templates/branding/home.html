@@ -1,0 +1,43 @@
+{% extends "layout/public_base.html" %}
+{% block content %}
+<main class="hero-main">
+  <div class="wrap hero-grid">
+    <div>
+      {% if site_settings.target_institution_name %}
+      <div class="uni-badge">
+        <span class="uni-badge-icon">{{ icon("academic-cap", size=24) }}</span>
+        <span class="uni-badge-text">
+          <b>{{ site_settings.target_institution_name }}</b>
+          <span>Postgraduate entrance exams</span>
+        </span>
+      </div>
+      {% endif %}
+      <h1>Practise for your postgraduate exam, <em>on screen.</em></h1>
+      <p class="hero-sub">Timed, computer-based practice with past questions{% if site_settings.shared_exam_short_name %} for the {{ site_settings.shared_exam_short_name }} test{% endif %} and your department, so exam day feels familiar.</p>
+      <div class="hero-cta">
+        <a href="{{ url('billing:plans_browse') }}" class="btn btn-primary btn-lg">Subscribe Now! {{ icon("arrow-right", size=16) }}</a>
+        <a href="{{ url('branding:how_it_works') }}" class="btn btn-quiet btn-lg">How it works</a>
+      </div>
+      <p class="hero-note"><b>Subscription-based.</b> Instant access after payment.</p>
+    </div>
+
+    <div class="preview" aria-hidden="true">
+      <div class="exam">
+        <div class="exam-top">
+          <span class="exam-title">{{ site_settings.shared_exam_name|default("Practice Exam") }}</span>
+          <span class="exam-timer">{{ icon("clock", size=13) }} 42:18</span>
+        </div>
+        <div class="exam-bar"><i></i></div>
+        <div class="exam-qn">Question 12 of 60</div>
+        <p class="exam-q">Choose the option that best completes the sentence.</p>
+        <div class="opt"><b>A</b>Option one</div>
+        <div class="opt sel"><b>B</b>Option two</div>
+        <div class="opt"><b>C</b>Option three</div>
+        <div class="opt"><b>D</b>Option four</div>
+        <div class="exam-foot"><span>Previous</span><b>Next</b></div>
+      </div>
+      <div class="preview-cap">Illustrative preview</div>
+    </div>
+  </div>
+</main>
+{% endblock %}

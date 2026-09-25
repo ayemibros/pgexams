@@ -1,0 +1,53 @@
+{% extends "layout/staff_shell.html" %}
+{% block page_title %}Question Banks{% endblock %}
+{% block content %}
+<style>
+.bank-icon{background:linear-gradient(135deg,#5b5ef4,#8b5cf6)}
+</style>
+<div class="page-head">
+  <div>
+    <div class="page-head-title">Question Banks</div>
+    <div class="page-head-sub">{{ banks|length }} bank{{ banks|length|pluralize }}</div>
+  </div>
+  <div class="page-head-actions">
+    <a href="{{ url('examhub:bank_add') }}" class="btn btn-primary">+ New Bank</a>
+  </div>
+</div>
+
+{% if banks %}
+<div class="card-grid">
+  {% for bank in banks %}
+  <div class="entity-card">
+    <div class="entity-card-head">
+      <div class="icon-chip icon-chip-lg bank-icon" style="color:#fff">📚</div>
+      <div>
+        <div class="entity-card-title">{{ bank.name }}</div>
+        <div class="entity-card-sub">{{ bank.subject.name|default("No subject") }}</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+      <span class="pill pill-gray">{{ bank.question_count }} question{{ bank.question_count|pluralize }}</span>
+      {% if bank.created_by %}<span class="pill pill-gray">by {{ bank.created_by.get_full_name|default(bank.created_by.username) }}</span>{% endif %}
+    </div>
+    <div class="entity-card-foot">
+      <a href="{{ url('examhub:bank_questions', bank.pk) }}" class="btn btn-outline btn-sm">Open</a>
+      <a href="{{ url('examhub:bulk_upload', bank.pk) }}" class="btn btn-outline btn-sm">Bulk Upload</a>
+      <a href="{{ url('examhub:bank_edit', bank.pk) }}" class="btn btn-outline btn-sm">Edit</a>
+      <form method="post" action="{{ url('examhub:bank_delete', bank.pk) }}" style="display:inline;margin-left:auto" onsubmit="return confirm('Delete this bank and all its questions?');">
+        {{ csrf_input }}<button type="submit" class="btn btn-outline btn-sm" style="color:#e11d48">Delete</button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card">
+  <div class="empty-pro">
+    <div class="empty-pro-icon">📚</div>
+    <div class="empty-pro-title">No question banks yet</div>
+    <div class="empty-pro-sub">Create a bank to start adding questions — you can organize by subject however suits you.</div>
+    <a href="{{ url('examhub:bank_add') }}" class="btn btn-primary" style="margin-top:1rem">+ New Bank</a>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

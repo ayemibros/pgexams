@@ -1,0 +1,33 @@
+{% extends "layout/staff_shell.html" %}
+{% block page_title %}Grade Theory Answers{% endblock %}
+{% block content %}
+<div style="margin-bottom:1rem">
+  <div style="font-size:1.1rem;font-weight:900">{{ attempt.exam.title }}</div>
+  <div style="font-size:.8125rem;color:#6b7280">{{ attempt.student.get_full_name|default(attempt.student.username) }}</div>
+</div>
+<form method="post">
+  {{ csrf_input }}
+  {% for aa in theory_answers %}
+  <div class="card" style="padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:.875rem;font-weight:700;margin-bottom:.5rem">{{ aa.exam_question.eff_stem|safe }}</div>
+    <div style="background:#f8f9fb;border-radius:8px;padding:.75rem 1rem;font-size:.8125rem;margin-bottom:.75rem;white-space:pre-wrap">{{ aa.text_answer|default("(No answer submitted)") }}</div>
+    {% if aa.exam_question.eff_model_answer %}
+    <div style="font-size:.75rem;color:#6b7280;margin-bottom:.75rem"><strong>Model answer:</strong> {{ aa.exam_question.eff_model_answer|safe }}</div>
+    {% endif %}
+    <div style="display:flex;gap:1rem;align-items:flex-end">
+      <div class="form-row" style="flex:0 0 140px">
+        <label class="form-label">Score (max {{ aa.exam_question.points }})</label>
+        <input type="number" step="0.5" name="score_{{ aa.pk }}" class="form-input" value="{{ aa.manual_score|default(aa.auto_score) }}" max="{{ aa.exam_question.points }}">
+      </div>
+      <div class="form-row" style="flex:1">
+        <label class="form-label">Feedback (optional)</label>
+        <input type="text" name="feedback_{{ aa.pk }}" class="form-input" value="{{ aa.instructor_feedback }}">
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="empty">No theory answers to grade for this attempt.</div>
+  {% endfor %}
+  {% if theory_answers %}<button type="submit" class="btn btn-primary">Save Grades</button>{% endif %}
+</form>
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block crumbs %}<a href="/admin/">Home</a> › {{ model.app }} › <a href="/admin/{{ model.key }}/">{{ model.name }}</a> › {{ title }}{% endblock %}
+{% block content %}
+<h1>{% if id %}Change{% else %}Add{% endif %}: {{ title }}</h1>
+{% if errors|length %}<div class="msg msg-error">Please correct the errors below.<ul>{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul></div>{% endif %}
+<form method="post">
+  {{ csrf_input }}
+  <div class="card" style="padding:1rem 1.25rem">
+    <table>
+      {% for f in fields %}
+      <tr>
+        <td style="width:220px;padding-top:.8rem"><label for="f_{{ f.name }}"><strong>{{ f.name }}</strong></label>{% if f.nullable %}<div class="muted">optional</div>{% endif %}</td>
+        <td>
+          {% if f.readonly %}
+            <div class="muted" style="padding:.5rem 0;word-break:break-all">{% if f.value %}{{ f.value|truncatechars(40) }}{% else %}(not set){% endif %}</div>
+            <input type="password" name="_new_password" placeholder="Set a new password (leave blank to keep the current one)" autocomplete="new-password">
+          {% elif f.kind == 'bool' %}
+            <input type="checkbox" id="f_{{ f.name }}" name="{{ f.name }}" {% if f.value %}checked{% endif %}>
+          {% elif is_user and f.name == 'role' %}
+            <select id="f_{{ f.name }}" name="role">{% for val, label in role_choices %}<option value="{{ val }}" {% if f.value == val %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+          {% elif f.kind == 'longtext' %}
+            <textarea id="f_{{ f.name }}" name="{{ f.name }}">{{ f.value }}</textarea>
+          {% elif f.kind == 'int' or f.kind == 'decimal' %}
+            <input type="number" step="any" id="f_{{ f.name }}" name="{{ f.name }}" value="{{ f.value }}">
+          {% elif f.kind == 'datetime' %}
+            <input type="datetime-local" id="f_{{ f.name }}" name="{{ f.name }}" value="{{ f.value }}"> <span class="muted">UTC</span>
+          {% elif f.kind == 'date' %}
+            <input type="date" id="f_{{ f.name }}" name="{{ f.name }}" value="{{ f.value }}">
+          {% else %}
+            <input type="text" id="f_{{ f.name }}" name="{{ f.name }}" value="{{ f.value }}">
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+  <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+    <button type="submit" class="btn btn-primary">Save</button>
+    <button type="submit" name="_addanother" value="1" class="btn">Save and add another</button>
+    <button type="submit" name="_continue" value="1" class="btn">Save and continue editing</button>
+    {% if id %}<a href="/admin/{{ model.key }}/{{ id }}/delete/" class="btn btn-danger" style="margin-left:auto">Delete</a>{% endif %}
+  </div>
+</form>
+{% endblock %}

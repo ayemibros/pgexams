@@ -1,0 +1,111 @@
+{% extends "layout/staff_shell.html" %}
+{% block page_title %}Site Branding{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="page-head-title">Site Branding</div>
+    <div class="page-head-sub">Configure this deployment's school name, logo and homepage copy — nothing here is hardcoded.</div>
+  </div>
+</div>
+
+<div class="card" style="max-width:680px;padding:1.5rem">
+  <form method="post" enctype="multipart/form-data">
+    {{ csrf_input }}
+
+    <div class="form-section-lbl" style="margin-top:0;padding-top:0;border-top:none">Identity</div>
+    <div class="form-row">
+      <label class="form-label">School name</label>
+      <input type="text" name="school_name" class="form-input" value="{{ settings_obj.school_name }}" required>
+    </div>
+    <div class="form-row">
+      <label class="form-label">Short name (logo badge fallback, max 8 chars)</label>
+      <input type="text" name="short_name" class="form-input" value="{{ settings_obj.short_name }}" maxlength="8" required>
+    </div>
+    <div class="form-row" style="display:flex;align-items:center;gap:1rem">
+      <div style="flex:1">
+        <label class="form-label">Upload logo</label>
+        <input type="file" name="logo" class="form-input" accept="image/*">
+        <div class="form-hint">Takes priority over the logo URL below.</div>
+      </div>
+      <div>
+        {% if settings_obj.effective_logo_url %}
+          <img src="{{ settings_obj.effective_logo_url }}" alt="" style="width:48px;height:48px;border-radius:12px;object-fit:cover;box-shadow:0 4px 12px rgba(0,0,0,.15)">
+        {% else %}
+          <span class="brand-badge">{{ settings_obj.short_name }}</span>
+        {% endif %}
+      </div>
+    </div>
+    <div class="form-row">
+      <label class="form-label">Logo URL (fallback if no file uploaded)</label>
+      <input type="url" name="logo_url" class="form-input" value="{{ settings_obj.logo_url }}" placeholder="https://...">
+    </div>
+
+    <div class="form-section-lbl">Colors</div>
+    <div class="form-row" style="display:flex;gap:1.5rem">
+      <div>
+        <label class="form-label">Primary color</label>
+        <input type="color" name="primary_color" class="form-color" value="{{ settings_obj.primary_color }}">
+      </div>
+      <div>
+        <label class="form-label">Secondary color</label>
+        <input type="color" name="secondary_color" class="form-color" value="{{ settings_obj.secondary_color }}">
+      </div>
+    </div>
+
+    <div class="form-section-lbl">Redeployment — this business, not the platform brand</div>
+    <div class="form-row">
+      <label class="form-label">Institution applicants are preparing for</label>
+      <input type="text" name="target_institution_name" class="form-input" value="{{ settings_obj.target_institution_name }}" placeholder="e.g. University of Ibadan">
+      <div class="form-hint">Shown in the hero, meta text and the independence disclaimer. This service is always presented as independent of it, never as run by it. Leave blank if not applicable.</div>
+    </div>
+    <div class="form-row" style="display:flex;gap:1rem">
+      <div style="flex:2">
+        <label class="form-label">Shared test — full name</label>
+        <input type="text" name="shared_exam_name" class="form-input" value="{{ settings_obj.shared_exam_name }}" placeholder="e.g. English Proficiency Test">
+      </div>
+      <div style="flex:1">
+        <label class="form-label">Shared test — short name</label>
+        <input type="text" name="shared_exam_short_name" class="form-input" value="{{ settings_obj.shared_exam_short_name }}" placeholder="e.g. EPT" maxlength="20">
+      </div>
+    </div>
+    <div class="form-hint" style="margin:-.5rem 0 1.25rem">The one test every applicant sits, regardless of department. Leave both blank if this business has no such shared test — every exam will then belong to a department only.</div>
+
+    <div class="form-section-lbl">Homepage copy</div>
+    <div class="form-row">
+      <label class="form-label">Hero headline</label>
+      <input type="text" name="hero_headline" class="form-input" value="{{ settings_obj.hero_headline }}">
+    </div>
+    <div class="form-row">
+      <label class="form-label">Tagline</label>
+      <input type="text" name="tagline" class="form-input" value="{{ settings_obj.tagline }}">
+      <div class="form-hint">e.g. "Undergraduate POST-UTME and Postgraduate Entrance Examinations"</div>
+    </div>
+    <div class="form-row">
+      <label class="form-label">Trust line</label>
+      <input type="text" name="trust_line" class="form-input" value="{{ settings_obj.trust_line }}">
+    </div>
+    <div class="form-row">
+      <label class="form-label">Footer note</label>
+      <input type="text" name="footer_note" class="form-input" value="{{ settings_obj.footer_note }}">
+    </div>
+
+    <div class="form-section-lbl">Contact</div>
+    <div class="form-row">
+      <label class="form-label">Contact email</label>
+      <input type="email" name="contact_email" class="form-input" value="{{ settings_obj.contact_email }}">
+    </div>
+    <div class="form-row">
+      <label class="form-label">Contact phone</label>
+      <input type="text" name="contact_phone" class="form-input" value="{{ settings_obj.contact_phone }}">
+    </div>
+    <div class="form-row">
+      <label class="form-label">WhatsApp number</label>
+      <input type="text" name="whatsapp_number" class="form-input" value="{{ settings_obj.whatsapp_number }}" placeholder="+234 803 000 0000">
+      <div class="form-hint">Shown on the Support page as a "Chat on WhatsApp" button. Use international format; a Nigerian number starting with 0 is converted automatically.</div>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Save Settings</button>
+    <a href="{{ url('branding:home') }}" class="btn btn-outline" target="_blank">Preview homepage</a>
+  </form>
+</div>
+{% endblock %}

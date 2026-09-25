@@ -1,0 +1,347 @@
+{% extends "layout/public_base.html" %}
+{% block title %}Subscribe{% endblock %}
+{% block meta_desc %}Find your department, add the programmes you're applying to and subscribe for{% if site_settings.target_institution_name %} {{ site_settings.target_institution_name }}{% endif %} postgraduate entrance exam practice.{% endblock %}
+{% block content %}
+<main class="page page-tight">
+  <div class="wrap">
+    <div class="page-head compact">
+      <h1>Find your programme</h1>
+      <p>Search your department and add every programme you're applying to.</p>
+    </div>
+
+    {% if payment_simulation %}
+    <div class="notice test" role="status"><b>Test mode.</b> Payments are simulated, so no real money is charged.</div>
+    {% endif %}
+
+    {% if request.user.is_authenticated and not gateway_configured %}
+    <div class="notice warn" role="status">Online payment isn't available right now.{% if site_settings.contact_email %} Please contact <a href="mailto:{{ site_settings.contact_email }}">{{ site_settings.contact_email }}</a> to arrange access.{% else %} Please check back shortly.{% endif %}</div>
+    {% endif %}
+
+    {% if has_programs and tiers %}
+    <div class="sub-grid">
+      <section aria-label="Choose your programmes">
+        <div class="searchbox">
+          {{ icon("search", size=20, css_class="si") }}
+          <input id="q" type="search" placeholder="Search your department or programme…" autocomplete="off" aria-label="Search departments and programmes">
+          <button type="button" class="clear" id="q-clear" aria-label="Clear search" hidden>×</button>
+        </div>
+        <div id="browse" aria-live="polite"></div>
+        <noscript><div class="notice">Please turn on JavaScript to choose your programmes.</div></noscript>
+      </section>
+
+      <aside class="panel summary" id="summary" aria-label="Your selection">
+        <div class="sum-head"><h2>Your selection</h2><span class="count" id="count">0</span></div>
+
+        <p class="sum-empty" id="sel-empty">Add one or more programmes to continue.</p>
+        <ul class="sel-list" id="sel-list" hidden></ul>
+
+        <fieldset class="tier-pick">
+          <legend>Access length <span>· price per programme</span></legend>
+          <div class="tier-row">
+            {% for t in tiers %}
+            <label class="tier-opt">
+              <input class="sr-only" type="radio" name="tier" value="{{ t.pk }}">
+              <span class="tier-opt-months">{{ t.months }} month{{ t.months|pluralize }}</span>
+              <span class="tier-opt-price">₦{{ t.price|floatformat(0)|intcomma }}</span>
+            </label>
+            {% endfor %}
+          </div>
+        </fieldset>
+
+        <div class="sum-total"><span id="total-note">Total</span><b id="total">—</b></div>
+
+        {% if request.user.is_authenticated %}
+        <form method="post" action="{{ url('billing:checkout_cart') }}" id="cart-form">
+          {{ csrf_input }}
+          <div id="cart-inputs"></div>
+          <button type="submit" class="btn btn-primary btn-lg btn-block" id="cta" disabled>Continue to payment</button>
+        </form>
+        {% else %}
+        <a href="#" class="btn btn-primary btn-lg btn-block" id="cta-link" aria-disabled="true">Create account to continue</a>
+        <p class="alt-line">Already have an account? <a href="#" id="login-link">Log in</a></p>
+        {% endif %}
+        <p class="cta-hint" id="cta-hint">Add a programme to get started.</p>
+
+        <p class="incl-line">{{ icon("check-circle", size=14) }}<span>Each programme includes{% if site_settings.shared_exam_short_name %} the {{ site_settings.shared_exam_short_name }} test and{% endif %} its department exams, all years, with unlimited practice.</span></p>
+      </aside>
+    </div>
+    {% elif not has_programs %}
+    <div class="empty"><b>Programmes coming soon</b>We're adding postgraduate programmes. Please check back shortly.</div>
+    {% else %}
+    <div class="empty"><b>Pricing coming soon</b>Subscription plans aren't available yet. Please check back shortly.</div>
+    {% endif %}
+
+    {% if general_plans %}
+    <h2 class="section-title">Other plans</h2>
+    <div class="plan-rows">
+      {% for plan in general_plans %}
+      <div class="plan-row">
+        <div>
+          <div class="plan-row-name">{{ plan.name }}</div>
+          <div class="plan-row-meta">₦{{ plan.price|floatformat(0)|intcomma }} · {{ plan.duration_days }} day{{ plan.duration_days|pluralize }}{% if plan.is_all_access %} · All access{% endif %}</div>
+        </div>
+        {% if plan.pk in active_plan_ids %}
+          <span class="pill">Active</span>
+        {% else %}
+          <form method="post" action="{{ url('billing:checkout_start', plan.pk) }}">
+            {{ csrf_input }}
+            <button type="submit" class="btn btn-outline" {% if not gateway_configured %}disabled{% endif %}>Pay ₦{{ plan.price|floatformat(0)|intcomma }}</button>
+          </form>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</main>
+
+<div class="cartbar" id="cartbar" hidden>
+  <div><b id="cartbar-count">0 selected</b><span id="cartbar-total"></span></div>
+  <button type="button" class="btn btn-primary" id="cartbar-btn">Review</button>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if has_programs and tiers %}
+{{ subscribe_data|json_script("subscribe-data") }}
+<script>
+(function(){
+  var D = JSON.parse(document.getElementById('subscribe-data').textContent);
+  var $ = function(id){ return document.getElementById(id); };
+  var money = function(n){ return '₦' + Number(n).toLocaleString('en-NG'); };
+  var svg = function(inner, size){ return '<svg xmlns="http://www.w3.org/2000/svg" width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">'+inner+'</svg>'; };
+  var ICON = {
+    check: svg('<polyline points="20 6 9 17 4 12"/>', 14),
+    right: svg('<polyline points="9 18 15 12 9 6"/>', 18),
+    left:  svg('<polyline points="15 18 9 12 15 6"/>', 16),
+    x:     svg('<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>', 14)
+  };
+  function el(tag, cls, text){ var n = document.createElement(tag); if(cls) n.className = cls; if(text != null) n.textContent = text; return n; }
+  function plural(n, w){ return n + ' ' + w + (n === 1 ? '' : 's'); }
+
+  // ── Index the catalogue ────────────────────────────────────────
+  var progs = [], byId = {};
+  D.faculties.forEach(function(f){
+    f.count = 0;
+    f.depts.forEach(function(d){
+      d.progs.forEach(function(p){
+        p.dept = d.name; p.faculty = f.name;
+        p.key = (p.name + ' ' + d.name + ' ' + f.name).toLowerCase();
+        progs.push(p); byId[p.id] = p; f.count++;
+      });
+    });
+  });
+  var tierById = {};
+  D.tiers.forEach(function(t){ tierById[t.id] = t; });
+
+  var state = {
+    q: '',
+    faculty: D.initial.faculty,
+    sel: [],
+    tier: tierById[D.initial.tier] ? D.initial.tier : null
+  };
+  D.initial.programs.forEach(function(id){
+    if(byId[id] && state.sel.indexOf(id) < 0 && state.sel.length < D.cap) state.sel.push(id);
+  });
+
+  // ── Browse / search list ───────────────────────────────────────
+  var $browse = $('browse');
+
+  function progRow(p, showWhere){
+    if(p.until){
+      var o = el('div', 'prog is-owned');
+      var m = el('span', 'prog-main');
+      m.appendChild(el('span', 'prog-name', p.name));
+      if(showWhere) m.appendChild(el('span', 'prog-sub', p.dept + ' · ' + p.faculty));
+      o.appendChild(m);
+      o.appendChild(el('span', 'pill', 'Active until ' + p.until));
+      return o;
+    }
+    var b = el('button', 'prog'); b.type = 'button'; b.dataset.id = p.id;
+    var main = el('span', 'prog-main');
+    main.appendChild(el('span', 'prog-name', p.name));
+    if(showWhere) main.appendChild(el('span', 'prog-sub', p.dept + ' · ' + p.faculty));
+    b.appendChild(main);
+    var mark = el('span', 'prog-mark'); mark.innerHTML = ICON.check;
+    b.appendChild(mark);
+    return b;
+  }
+
+  function appendFaculty(f, withTitle){
+    if(withTitle) $browse.appendChild(el('h3', 'fac-head', f.name));
+    f.depts.forEach(function(d){
+      var g = el('div', 'grp'); g.appendChild(el('span', null, d.name));
+      $browse.appendChild(g);
+      var list = el('div', 'prog-list');
+      d.progs.forEach(function(p){ list.appendChild(progRow(p, false)); });
+      $browse.appendChild(list);
+    });
+  }
+
+  function renderBrowse(){
+    $browse.textContent = '';
+    var q = state.q.trim().toLowerCase();
+
+    if(q){
+      var tokens = q.split(/\s+/);
+      var hits = progs.filter(function(p){ return tokens.every(function(t){ return p.key.indexOf(t) >= 0; }); });
+      if(!hits.length){
+        var none = el('div', 'no-results');
+        none.appendChild(el('b', null, 'No programmes match “' + state.q.trim() + '”'));
+        none.appendChild(el('span', null, 'Try a shorter name, or browse by faculty instead.'));
+        var clr = el('button', 'btn btn-outline', 'Browse all faculties'); clr.type = 'button'; clr.dataset.clear = '1';
+        none.appendChild(clr);
+        $browse.appendChild(none);
+        return;
+      }
+      $browse.appendChild(el('p', 'browse-title', plural(hits.length, 'result')));
+      var list = el('div', 'prog-list');
+      hits.slice(0, 60).forEach(function(p){ list.appendChild(progRow(p, true)); });
+      $browse.appendChild(list);
+      if(hits.length > 60) $browse.appendChild(el('p', 'more-note', 'Showing the first 60. Type more of the name to narrow it down.'));
+      syncRows(); return;
+    }
+
+    if(state.faculty !== null){
+      var f = D.faculties.filter(function(x){ return x.id === state.faculty; })[0];
+      if(f){
+        if(D.faculties.length > 1){
+          var back = el('button', 'back'); back.type = 'button'; back.dataset.back = '1';
+          back.innerHTML = ICON.left + ' All faculties';
+          $browse.appendChild(back);
+        }
+        appendFaculty(f, true);
+        syncRows(); return;
+      }
+    }
+
+    // Small catalogue or a single faculty: no need to make people drill down.
+    if(progs.length <= 12 || D.faculties.length === 1){
+      D.faculties.forEach(function(f){ appendFaculty(f, D.faculties.length > 1); });
+      syncRows(); return;
+    }
+
+    $browse.appendChild(el('p', 'browse-title', 'Browse by faculty'));
+    var grid = el('div', 'fac-grid');
+    D.faculties.forEach(function(f){
+      var b = el('button', 'fac'); b.type = 'button'; b.dataset.faculty = f.id;
+      var t = el('span');
+      t.appendChild(el('b', null, f.name));
+      t.appendChild(el('span', null, plural(f.count, 'programme')));
+      b.appendChild(t);
+      var c = el('span'); c.innerHTML = ICON.right; b.appendChild(c);
+      grid.appendChild(b);
+    });
+    $browse.appendChild(grid);
+  }
+
+  function syncRows(){
+    var full = state.sel.length >= D.cap;
+    Array.prototype.forEach.call($browse.querySelectorAll('.prog[data-id]'), function(b){
+      var on = state.sel.indexOf(parseInt(b.dataset.id, 10)) >= 0;
+      b.classList.toggle('is-selected', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      b.disabled = !on && full;
+    });
+  }
+
+  // ── Summary panel ──────────────────────────────────────────────
+  var $list = $('sel-list'), $empty = $('sel-empty'), $count = $('count');
+  var $total = $('total'), $note = $('total-note'), $hint = $('cta-hint');
+  var $cta = $('cta'), $ctaLink = $('cta-link'), $login = $('login-link');
+  var $inputs = $('cart-inputs'), $bar = $('cartbar');
+
+  function selectionUrl(){
+    return D.urls.subscribe + (state.sel.length ? '?programs=' + state.sel.join(',') + (state.tier ? '&tier=' + state.tier : '') : '');
+  }
+
+  function updateSummary(){
+    var n = state.sel.length, t = state.tier ? tierById[state.tier] : null;
+    $count.textContent = n;
+
+    $list.textContent = '';
+    state.sel.forEach(function(id){
+      var li = el('li');
+      li.appendChild(el('span', null, byId[id].name));
+      var rm = el('button'); rm.type = 'button'; rm.dataset.remove = id;
+      rm.setAttribute('aria-label', 'Remove ' + byId[id].name); rm.innerHTML = ICON.x;
+      li.appendChild(rm);
+      $list.appendChild(li);
+    });
+    $list.hidden = n === 0;
+    $empty.hidden = n > 0;
+
+    Array.prototype.forEach.call(document.querySelectorAll('input[name=tier]'), function(r){
+      r.checked = state.tier !== null && parseInt(r.value, 10) === state.tier;
+    });
+
+    var ready = n > 0 && !!t;
+    $total.textContent = ready ? money(t.price * n) : '—';
+    $note.textContent = ready ? plural(n, 'programme') + ' × ' + money(t.price) : 'Total';
+
+    var hint = '';
+    if(n === 0) hint = 'Add a programme to get started.';
+    else if(!t) hint = 'Choose how long you need access.';
+    else if(n >= D.cap) hint = 'You can add up to ' + D.cap + ' programmes at a time.';
+    $hint.textContent = hint; $hint.hidden = !hint;
+
+    if(D.authed){
+      $inputs.textContent = '';
+      state.sel.forEach(function(id){
+        var i = document.createElement('input'); i.type = 'hidden'; i.name = 'programs'; i.value = id; $inputs.appendChild(i);
+      });
+      if(t){ var ti = document.createElement('input'); ti.type = 'hidden'; ti.name = 'tier'; ti.value = t.id; $inputs.appendChild(ti); }
+      $cta.disabled = !(ready && D.gateway);
+    } else {
+      var next = encodeURIComponent(selectionUrl());
+      $login.href = D.urls.login + '?next=' + next;
+      $ctaLink.href = ready ? D.urls.register + '?next=' + next : '#';
+      $ctaLink.setAttribute('aria-disabled', ready ? 'false' : 'true');
+    }
+
+    $bar.hidden = n === 0;
+    $('cartbar-count').textContent = plural(n, 'programme') + ' selected';
+    $('cartbar-total').textContent = ready ? money(t.price * n) : 'Choose a plan length';
+
+    try { history.replaceState(null, '', selectionUrl()); } catch(e) {}
+  }
+
+  function toggle(id){
+    var i = state.sel.indexOf(id);
+    if(i >= 0) state.sel.splice(i, 1);
+    else if(state.sel.length < D.cap) state.sel.push(id);
+    syncRows(); updateSummary();
+  }
+
+  // ── Events ─────────────────────────────────────────────────────
+  $browse.addEventListener('click', function(e){
+    var prog = e.target.closest('.prog[data-id]');
+    if(prog){ toggle(parseInt(prog.dataset.id, 10)); return; }
+    var fac = e.target.closest('[data-faculty]');
+    if(fac){ state.faculty = parseInt(fac.dataset.faculty, 10); renderBrowse(); $browse.scrollIntoView({block: 'start', behavior: 'smooth'}); return; }
+    if(e.target.closest('[data-back]')){ state.faculty = null; renderBrowse(); return; }
+    if(e.target.closest('[data-clear]')){ clearSearch(); state.faculty = null; renderBrowse(); }
+  });
+
+  var $q = $('q'), $qc = $('q-clear');
+  function clearSearch(){ state.q = ''; $q.value = ''; $qc.hidden = true; }
+  $q.addEventListener('input', function(){ state.q = $q.value; $qc.hidden = !$q.value; renderBrowse(); });
+  $q.addEventListener('keydown', function(e){ if(e.key === 'Escape' && $q.value){ clearSearch(); renderBrowse(); } });
+  $qc.addEventListener('click', function(){ clearSearch(); renderBrowse(); $q.focus(); });
+
+  $list.addEventListener('click', function(e){
+    var rm = e.target.closest('[data-remove]');
+    if(rm) toggle(parseInt(rm.dataset.remove, 10));
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('input[name=tier]'), function(r){
+    r.addEventListener('change', function(){ state.tier = parseInt(r.value, 10); updateSummary(); });
+  });
+  if($ctaLink) $ctaLink.addEventListener('click', function(e){ if($ctaLink.getAttribute('aria-disabled') === 'true') e.preventDefault(); });
+  $('cartbar-btn').addEventListener('click', function(){ $('summary').scrollIntoView({behavior: 'smooth', block: 'start'}); });
+
+  renderBrowse();
+  updateSummary();
+})();
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "layout/staff_shell.html" %}
+{% block page_title %}{{ exam.title }} — Sections{% endblock %}
+{% block content %}
+<a href="{{ url('examhub:staff_exam_list') }}" style="font-size:.75rem;color:#9ca3af;text-decoration:none;display:inline-block;margin-bottom:.5rem">← All exams</a>
+<div class="page-head">
+  <div>
+    <div class="page-head-title">{{ exam.title }}</div>
+    <div class="page-head-sub">{{ total_q }} question{{ total_q|pluralize }} &bull; {{ total_pts|floatformat(0) }} marks total {% if exam.is_published %}&bull; <span class="pill pill-green">Published</span>{% else %}&bull; <span class="pill pill-gray">Draft</span>{% endif %}</div>
+  </div>
+  <div class="page-head-actions">
+    <a href="{{ url('examhub:exam_edit', exam.pk) }}" class="btn btn-outline">Edit Settings</a>
+    {% if exam.is_published %}
+    <form method="post" style="display:inline">{{ csrf_input }}<input type="hidden" name="action" value="unpublish"><button type="submit" class="btn btn-outline">Unpublish</button></form>
+    {% else %}
+    <form method="post" style="display:inline">{{ csrf_input }}<input type="hidden" name="action" value="publish"><button type="submit" class="btn btn-primary">Publish Exam</button></form>
+    {% endif %}
+  </div>
+</div>
+
+{% if total_q == 0 %}<div class="msg msg-warning">This exam has no questions yet — add sections and questions before publishing.</div>{% endif %}
+
+<div class="card" style="margin-bottom:1.25rem">
+  <table class="table">
+    <thead><tr><th>#</th><th>Section</th><th>Questions</th><th>Points</th><th></th></tr></thead>
+    <tbody>
+      {% for s in sections %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td><a href="{{ url('examhub:section_questions', s.pk) }}" style="font-weight:700;text-decoration:none;color:#111827">{{ s.title }}</a>{% if s.subject %}<div style="font-size:.7rem;color:#9ca3af">{{ s.subject.name }}</div>{% endif %}{% if s.instructions %}<div style="font-size:.7rem;color:#9ca3af">{{ s.instructions }}</div>{% endif %}</td>
+        <td>{{ s.question_count }}{% if s.questions_to_pick %} (pick {{ s.questions_to_pick }}){% endif %}</td>
+        <td>{{ s.total_points|floatformat(0) }}</td>
+        <td style="text-align:right">
+          <a href="{{ url('examhub:section_questions', s.pk) }}" class="btn btn-outline btn-sm">Manage Questions</a>
+          <form method="post" style="display:inline" onsubmit="return confirm('Delete this section and its questions?');">{{ csrf_input }}<input type="hidden" name="action" value="delete_section"><input type="hidden" name="section_pk" value="{{ s.pk }}"><button type="submit" class="btn btn-outline btn-sm" style="color:#e11d48">Delete</button></form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="empty">No sections yet — add one below.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="card" style="max-width:420px;padding:1.25rem">
+  <form method="post" style="display:flex;gap:.5rem">
+    {{ csrf_input }}
+    <input type="hidden" name="action" value="add_section">
+    <input type="text" name="title" class="form-input" placeholder="New section title, e.g. Section A" required>
+    <button type="submit" class="btn btn-primary">Add</button>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends "layout/public_base.html" %}
+{% block title %}Log in{% endblock %}
+{% block nav_actions %}<a href="{{ url('billing:plans_browse') }}" class="btn btn-primary">Subscribe Now!</a>{% endblock %}
+{% block content %}
+<main class="auth-main">
+  <div class="auth-card">
+    <h1>Welcome back</h1>
+    <p class="auth-sub">Log in to continue practising.</p>
+    {% if form.errors %}<div class="alert" role="alert">Incorrect username or password.</div>{% endif %}
+    <form method="post">
+      {{ csrf_input }}
+      <div class="field">
+        <label for="id_username">Email or username</label>
+        <input class="input" type="text" name="username" id="id_username" autocomplete="username" autofocus required>
+      </div>
+      <div class="field">
+        <div class="label-row">
+          <label for="id_password">Password</label>
+          <a href="{{ url('branding:support') }}">Forgot password?</a>
+        </div>
+        <div class="pw">
+          <input class="input" type="password" name="password" id="id_password" autocomplete="current-password" required>
+          <button type="button" aria-label="Show password">Show</button>
+        </div>
+      </div>
+      <input type="hidden" name="next" value="{{ next }}">
+      <button type="submit" class="btn btn-primary btn-lg btn-block">Log in</button>
+    </form>
+    <p class="auth-alt">New applicant? <a href="{% if next %}{{ next }}{% else %}{{ url('billing:plans_browse') }}{% endif %}">Subscribe to get started</a></p>
+  </div>
+</main>
+{% endblock %}
+{% block scripts %}{% include "registration/_pw_toggle.html" %}{% endblock %}

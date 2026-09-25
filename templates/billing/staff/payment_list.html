@@ -1,0 +1,50 @@
+{% extends "layout/staff_shell.html" %}
+{% block page_title %}Payments{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="page-head-title">Payments</div>
+    <div class="page-head-sub">{{ payments|length }} payment{{ payments|length|pluralize }} · ₦{{ total_revenue|floatformat(0)|intcomma }} collected</div>
+  </div>
+  <div class="page-head-actions">
+    <form method="get" style="display:flex;gap:.5rem">
+      <select name="status" class="form-select" onchange="this.form.submit()">
+        <option value="">All statuses</option>
+        {% for val, label in status_choices %}<option value="{{ val }}" {% if filters.status == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+    </form>
+  </div>
+</div>
+
+{% if payments %}
+<div class="card">
+  <table class="table">
+    <thead><tr><th>Reference</th><th>Student</th><th>Plan</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead>
+    <tbody>
+      {% for p in payments %}
+      <tr>
+        <td style="font-family:ui-monospace,monospace;font-size:.75rem">{{ p.reference }}</td>
+        <td>{{ p.student.get_full_name|default(p.student.username) }}</td>
+        <td>{{ p.plan.name }}</td>
+        <td>₦{{ p.amount|floatformat(0)|intcomma }}</td>
+        <td>
+          {% if p.status == 'success' %}<span class="pill pill-green">Success</span>
+          {% elif p.status == 'failed' %}<span class="pill pill-red">Failed</span>
+          {% else %}<span class="pill pill-amber">Pending</span>{% endif %}
+        </td>
+        <td>{{ p.created_at|date("d M Y, H:i") }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card">
+  <div class="empty-pro">
+    <div class="empty-pro-icon">💰</div>
+    <div class="empty-pro-title">No payments yet</div>
+    <div class="empty-pro-sub">Online payments students make via Subscribe will show up here.</div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

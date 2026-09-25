@@ -1,0 +1,61 @@
+{% extends "layout/public_base.html" %}
+{% block title %}How it works{% endblock %}
+{% block meta_desc %}Find your department, subscribe and start practising{% if site_settings.target_institution_name %} {{ site_settings.target_institution_name }}{% endif %} postgraduate entrance exam questions.{% endblock %}
+{% block content %}
+<main class="page">
+  <div class="wrap wrap-md">
+    <div class="page-head">
+      <div class="kicker">How it works</div>
+      <h1>From sign-up to practice in three steps</h1>
+      <p>No setup and no downloads. Everything runs in your browser.</p>
+    </div>
+
+    <div class="cols-3">
+      <div class="step">
+        <div class="step-num">1</div>
+        <h3>Find your programme</h3>
+        <p>Search for your department and add the programmes you're applying to.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h3>Subscribe</h3>
+        <p>Choose how long you need access, create your account and pay securely online.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h3>Start practising</h3>
+        <p>Get instant access and practise at your own pace, any time.</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <div class="page-head">
+      <div class="kicker">What you get</div>
+      <h1>Built around the exam you're preparing for</h1>
+    </div>
+    <div class="cols-3">
+      <div class="item">
+        <div class="item-icon">{{ icon("book-open", size=22) }}</div>
+        <h3>Past-question practice</h3>
+        <p>{% if site_settings.shared_exam_short_name %}{{ site_settings.shared_exam_short_name }} and department-specific{% else %}Department-specific{% endif %} questions from previous years, in one place.</p>
+      </div>
+      <div class="item">
+        <div class="item-icon">{{ icon("clock", size=22) }}</div>
+        <h3>A real CBT experience</h3>
+        <p>Timed sessions on a clean, on-screen format that mirrors computer-based exams.</p>
+      </div>
+      <div class="item">
+        <div class="item-icon">{{ icon("bar-chart", size=22) }}</div>
+        <h3>Results and review</h3>
+        <p>Check your score, review your answers and track your progress over time.</p>
+      </div>
+    </div>
+
+    <div class="cta-line">
+      <div><b>Ready to start?</b><span>Find your programme and choose a plan.</span></div>
+      <a href="{{ url('billing:plans_browse') }}" class="btn btn-primary">Subscribe Now! {{ icon("arrow-right", size=16) }}</a>
+    </div>
+  </div>
+</main>
+{% endblock %}

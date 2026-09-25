@@ -1,0 +1,31 @@
+{% extends "layout/staff_shell.html" %}
+{% block page_title %}Analytics — {{ exam.title }}{% endblock %}
+{% block content %}
+{% if no_data %}
+<div class="empty">No attempts recorded yet for this exam.</div>
+{% else %}
+<div class="stat-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:1.5rem">
+  <div class="stat-card card" style="padding:1.1rem 1.25rem"><div style="font-size:1.5rem;font-weight:900">{{ total_attempts }}</div><div style="font-size:.7rem;font-weight:700;color:#9ca3af;text-transform:uppercase">Attempts</div></div>
+  <div class="stat-card card" style="padding:1.1rem 1.25rem"><div style="font-size:1.5rem;font-weight:900">{{ avg_score }}%</div><div style="font-size:.7rem;font-weight:700;color:#9ca3af;text-transform:uppercase">Average Score</div></div>
+  <div class="stat-card card" style="padding:1.1rem 1.25rem"><div style="font-size:1.5rem;font-weight:900;color:#059669">{{ pass_count }}</div><div style="font-size:.7rem;font-weight:700;color:#9ca3af;text-transform:uppercase">Passed</div></div>
+  <div class="stat-card card" style="padding:1.1rem 1.25rem"><div style="font-size:1.5rem;font-weight:900;color:#e11d48">{{ fail_count }}</div><div style="font-size:.7rem;font-weight:700;color:#9ca3af;text-transform:uppercase">Failed</div></div>
+</div>
+
+<div class="card">
+  <div style="padding:1rem 1.1rem .5rem;font-weight:800;font-size:.85rem">Question Difficulty (% answered correctly)</div>
+  <table class="table">
+    <thead><tr><th>Question</th><th>Attempts</th><th>Correct</th><th>Difficulty</th></tr></thead>
+    <tbody>
+      {% for row in q_stats %}
+      <tr>
+        <td>{{ row.eq.eff_stem|striptags|truncatechars(80) }}</td>
+        <td>{{ row.total }}</td>
+        <td>{{ row.correct }}</td>
+        <td><span class="pill {% if row.difficulty_pct >= 70 %}pill-green{% elif row.difficulty_pct >= 40 %}pill-amber{% else %}pill-red{% endif %}">{{ row.difficulty_pct }}%</span></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

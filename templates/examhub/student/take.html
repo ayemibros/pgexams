@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{ exam.title }} — CBT Exam</title>
+<link rel="stylesheet" href="/static/vendor/katex/katex.min.css">
+<script defer src="/static/vendor/katex/katex.min.js"></script>
+<script defer src="/static/vendor/katex/contrib/auto-render.min.js"
+  onload="renderMath(document.getElementById('q-card'))"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --primary:#e11d48;--primary-dark:#be123c;
+  --accent:#5b5ef4;--green:#10b981;--amber:#f59e0b;
+  --text:#111827;--muted:#6b7280;--border:#e5e7eb;
+  --surface:#f9fafb;--surface2:#f3f4f6;--white:#fff;
+  --radius:10px;--shadow:0 2px 12px rgba(0,0,0,.08);
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f1f3f5;color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+#topbar{background:var(--white);border-bottom:1px solid var(--border);padding:0 20px;height:56px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:200;flex-shrink:0;box-shadow:0 1px 8px rgba(0,0,0,.06)}
+#tb-title{font-size:14px;font-weight:800;color:var(--text);flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+#tb-section{font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap}
+#tb-prog{font-size:11px;font-weight:700;color:var(--muted);white-space:nowrap}
+#tb-timer{display:flex;align-items:center;gap:5px;font-size:18px;font-weight:900;font-family:monospace;padding:5px 12px;border-radius:8px;background:var(--surface2);color:var(--text);transition:color .3s,background .3s;white-space:nowrap}
+#tb-timer.warn{background:rgba(245,158,11,.12);color:#92400e}
+#tb-timer.danger{background:rgba(225,29,72,.1);color:#e11d48}
+.tb-btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:700;border:none;cursor:pointer;transition:all .13s;white-space:nowrap}
+#btn-calc{background:rgba(91,94,244,.1);color:#5b5ef4}
+#btn-calc:hover{background:rgba(91,94,244,.18)}
+#btn-scratch{background:rgba(16,185,129,.1);color:#059669}
+#btn-scratch:hover{background:rgba(16,185,129,.18)}
+#btn-submit{background:var(--primary);color:#fff}
+#btn-submit:hover{background:var(--primary-dark)}
+#exam-layout{display:flex;flex:1;overflow:hidden;height:calc(100vh - 56px)}
+#palette{width:230px;flex-shrink:0;background:var(--white);border-right:1px solid var(--border);overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:14px}
+#palette h3{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.pal-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}
+.pal-btn{width:100%;aspect-ratio:1;border:1.5px solid var(--border);border-radius:7px;background:var(--white);font-size:11px;font-weight:700;cursor:pointer;color:var(--muted);transition:all .12s;position:relative}
+.pal-btn:hover{border-color:var(--accent);color:var(--accent)}
+.pal-btn.current{border-color:var(--accent);background:var(--accent);color:#fff}
+.pal-btn.answered{border-color:var(--green);background:rgba(16,185,129,.1);color:#059669}
+.pal-btn.flagged::after{content:'';position:absolute;top:2px;right:2px;width:5px;height:5px;border-radius:50%;background:var(--amber)}
+.pal-btn.practice-correct{border-color:var(--green);background:rgba(16,185,129,.15);color:#059669}
+.pal-btn.practice-wrong{border-color:var(--primary);background:rgba(225,29,72,.1);color:var(--primary)}
+.pal-legend{display:flex;flex-direction:column;gap:5px}
+.pal-leg-item{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--muted)}
+.pal-leg-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+.pal-section-chip{background:var(--surface2);border-radius:7px;padding:6px 10px;font-size:11px;font-weight:700;color:var(--text);cursor:pointer;transition:background .12s;border:none;text-align:left;width:100%}
+.pal-section-chip:hover{background:var(--border)}
+.pal-section-chip.active{background:var(--accent);color:#fff}
+#q-area{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:16px}
+.q-card{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:24px 26px;max-width:820px;width:100%;margin:0 auto}
+.q-meta{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.q-num-badge{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.q-type-badge{font-size:10px;font-weight:700;padding:3px 9px;border-radius:6px;background:var(--surface2);color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.q-pts-badge{margin-left:auto;font-size:10px;font-weight:700;padding:3px 9px;border-radius:6px;background:rgba(91,94,244,.1);color:var(--accent)}
+.q-flag-btn{display:flex;align-items:center;gap:4px;padding:4px 10px;border-radius:6px;font-size:10px;font-weight:700;border:1.5px solid var(--border);background:transparent;cursor:pointer;color:var(--muted);transition:all .12s}
+.q-flag-btn:hover,.q-flag-btn.active{border-color:var(--amber);color:#92400e;background:rgba(245,158,11,.08)}
+.q-stem{font-size:14.5px;color:var(--text);line-height:1.75;margin-bottom:20px}
+.q-stem img{max-width:100%;border-radius:8px;margin-top:8px}
+.q-instr{font-size:11.5px;color:var(--muted);font-style:italic;margin-bottom:14px}
+.choice-opt{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;border:1.5px solid var(--border);border-radius:10px;cursor:pointer;transition:all .13s;margin-bottom:8px;background:var(--white);position:relative}
+.choice-opt:hover{border-color:var(--accent);background:rgba(91,94,244,.03)}
+.choice-opt.selected{border-color:var(--accent);background:rgba(91,94,244,.07)}
+.choice-opt.practice-correct{border-color:var(--green)!important;background:rgba(16,185,129,.07)!important}
+.choice-opt.practice-wrong{border-color:var(--primary)!important;background:rgba(225,29,72,.06)!important}
+.choice-label{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:7px;border:2px solid var(--border);font-size:12px;font-weight:800;flex-shrink:0;margin-top:1px;transition:all .13s;color:var(--muted)}
+.choice-opt.selected .choice-label{border-color:var(--accent);background:var(--accent);color:#fff}
+.choice-opt.practice-correct .choice-label{border-color:var(--green);background:var(--green);color:#fff}
+.choice-opt.practice-wrong .choice-label{border-color:var(--primary);background:var(--primary);color:#fff}
+.choice-text{font-size:13px;color:var(--text);line-height:1.55;flex:1}
+input[type=radio],input[type=checkbox]{display:none}
+.tf-opt{display:flex;align-items:center;justify-content:center;gap:8px;flex:1;padding:16px 10px;border:2px solid var(--border);border-radius:12px;cursor:pointer;transition:all .13s;font-size:15px;font-weight:800;background:var(--white)}
+.tf-opt:hover{border-color:var(--accent);background:rgba(91,94,244,.04)}
+.tf-opt.selected-true{border-color:var(--green);background:rgba(16,185,129,.09);color:#059669}
+.tf-opt.selected-false{border-color:var(--primary);background:rgba(225,29,72,.08);color:var(--primary)}
+.blank-standalone{display:block;width:100%;border:1.5px solid var(--border);border-radius:8px;padding:9px 13px;font-size:13px;color:var(--text);background:var(--white);outline:none;transition:border-color .15s;margin-bottom:8px}
+.blank-standalone:focus{border-color:var(--accent)}
+.numeric-wrap{display:flex;align-items:center;gap:10px;max-width:320px}
+.numeric-input{flex:1;border:1.5px solid var(--border);border-radius:8px;padding:10px 14px;font-size:16px;font-weight:700;color:var(--text);background:var(--white);outline:none;transition:border-color .15s;text-align:right}
+.numeric-input:focus{border-color:var(--accent)}
+.numeric-unit{font-size:14px;font-weight:700;color:var(--muted);white-space:nowrap}
+.theory-area{width:100%;border:1.5px solid var(--border);border-radius:10px;padding:12px 16px;font-size:13px;color:var(--text);background:var(--white);min-height:150px;max-height:400px;resize:vertical;outline:none;transition:border-color .15s;font-family:inherit;line-height:1.65}
+.theory-area:focus{border-color:var(--accent)}
+.theory-count{font-size:10px;color:var(--muted);text-align:right;margin-top:4px}
+.match-layout{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.match-col-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:8px}
+.match-item{padding:10px 14px;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;font-size:12.5px;color:var(--text);cursor:pointer;transition:all .12s;user-select:none;margin-bottom:6px;position:relative}
+.match-item.selected-left{border-color:var(--accent);background:rgba(91,94,244,.1);color:var(--accent);font-weight:700}
+.match-item.matched{border-color:var(--green);background:rgba(16,185,129,.08)}
+.match-item.matched::after{content:attr(data-match);position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:10px;color:#059669;font-weight:700}
+.match-right-item{cursor:pointer}
+.order-list{list-style:none}
+.order-item{display:flex;align-items:center;gap:10px;padding:11px 14px;background:var(--white);border:1.5px solid var(--border);border-radius:9px;cursor:grab;font-size:13px;color:var(--text);margin-bottom:7px;user-select:none;transition:box-shadow .15s,opacity .15s}
+.order-item:active{cursor:grabbing}
+.order-item.dragging{opacity:.3;box-shadow:0 8px 24px rgba(0,0,0,.15)}
+.order-item.drag-over{border-color:var(--accent);background:rgba(91,94,244,.05)}
+.order-handle{color:var(--muted);flex-shrink:0}
+.order-idx{width:24px;height:24px;border-radius:6px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--muted);flex-shrink:0}
+.cat-items-pool{display:flex;flex-wrap:wrap;gap:8px;padding:12px;background:var(--surface2);border:1.5px dashed var(--border);border-radius:10px;min-height:52px;margin-bottom:16px;transition:border-color .15s}
+.cat-items-pool.drag-over{border-color:var(--accent);background:rgba(91,94,244,.04)}
+.cat-chip{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;background:var(--white);border:1.5px solid var(--border);border-radius:8px;font-size:12px;color:var(--text);cursor:grab;user-select:none;transition:box-shadow .12s}
+.cat-chip:active{cursor:grabbing}
+.cat-bucket{border:1.5px dashed var(--border);border-radius:10px;padding:10px 12px;min-height:56px;transition:border-color .15s;margin-bottom:8px}
+.cat-bucket.drag-over{border-color:var(--accent);background:rgba(91,94,244,.05)}
+.cat-bucket-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px}
+.practice-fb{padding:13px 16px;border-radius:10px;margin-top:14px;font-size:12.5px;line-height:1.6;display:none}
+.practice-fb.correct{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);color:#047857}
+.practice-fb.wrong{background:rgba(225,29,72,.08);border:1px solid rgba(225,29,72,.25);color:#dc2626}
+.practice-fb.show{display:block}
+#q-nav{background:var(--white);border-top:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;gap:10px;flex-shrink:0;position:sticky;bottom:0;z-index:100;max-width:820px;width:100%;margin:0 auto;border-radius:0 0 14px 14px}
+.nav-btn{display:flex;align-items:center;gap:5px;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:700;border:none;cursor:pointer;transition:all .13s}
+.nav-btn-prev{background:var(--surface2);color:var(--text)}
+.nav-btn-prev:hover{background:var(--border)}
+.nav-btn-next{background:var(--accent);color:#fff}
+.nav-btn-next:hover{background:#4a4de0}
+.nav-btn:disabled{opacity:.4;cursor:not-allowed}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:500;backdrop-filter:blur(4px)}
+.modal{background:var(--white);border-radius:16px;padding:30px;max-width:440px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal h2{font-size:18px;font-weight:900;color:var(--text);margin-bottom:8px}
+.modal p{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:20px}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end}
+.modal-btn{padding:10px 20px;border-radius:8px;font-size:13px;font-weight:700;border:none;cursor:pointer;transition:all .13s}
+.modal-btn-cancel{background:var(--surface2);color:var(--text)}
+.modal-btn-cancel:hover{background:var(--border)}
+.modal-btn-submit{background:var(--primary);color:#fff}
+.modal-btn-submit:hover{background:var(--primary-dark)}
+#calc-panel{position:fixed;right:20px;bottom:80px;width:260px;background:var(--white);border:1px solid var(--border);border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.18);z-index:300;display:none;overflow:hidden}
+#calc-panel.show{display:block}
+#calc-display{background:#1a1a2e;padding:14px 16px;text-align:right}
+#calc-expr{font-size:11px;color:rgba(255,255,255,.5);min-height:16px;font-family:monospace}
+#calc-val{font-size:26px;font-weight:700;color:#fff;font-family:monospace;word-break:break-all}
+.calc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border)}
+.calc-btn{border:none;padding:14px 6px;font-size:14px;font-weight:700;cursor:pointer;background:var(--white);color:var(--text);transition:background .1s;font-family:monospace}
+.calc-btn:hover{background:var(--surface2)}
+.calc-btn.op{color:var(--accent);background:rgba(91,94,244,.06)}
+.calc-btn.eq{background:var(--accent);color:#fff}
+.calc-btn.clr{color:var(--primary)}
+.calc-btn.func{font-size:11px;color:var(--muted)}
+#scratch-panel{position:fixed;right:20px;bottom:80px;width:340px;background:var(--white);border:1px solid var(--border);border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.18);z-index:300;display:none;overflow:hidden}
+#scratch-panel.show{display:block}
+#scratch-header{padding:12px 14px;border-bottom:1px solid var(--border);font-size:12px;font-weight:800;color:var(--text);display:flex;align-items:center;justify-content:space-between}
+#scratch-area{width:100%;height:220px;border:none;padding:12px;font-size:12px;font-family:monospace;resize:none;outline:none;color:var(--text)}
+#tab-warning{position:fixed;top:0;left:0;right:0;z-index:600;background:#e11d48;color:#fff;padding:10px 20px;display:none;align-items:center;justify-content:space-between;font-size:13px;font-weight:700}
+#tab-warning.show{display:flex}
+@media(max-width:700px){ #palette{width:0;overflow:hidden;padding:0}#palette.open{width:200px;padding:14px}#tb-title{font-size:12px}}
+</style>
+</head>
+<body>
+
+<div id="tab-warning">
+  <span id="tab-warn-msg">Tab switch detected!</span>
+  <button onclick="document.getElementById('tab-warning').classList.remove('show')" style="background:rgba(255,255,255,.2);border:none;color:#fff;padding:4px 12px;border-radius:6px;cursor:pointer;font-weight:700">OK</button>
+</div>
+
+<div id="topbar">
+  <button id="pal-toggle" class="tb-btn" style="background:var(--surface2);color:var(--text)">
+    <svg width="15" height="15" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/></svg>
+  </button>
+  <div id="tb-title">{{ exam.title }}</div>
+  <div id="tb-section" style="display:none"></div>
+  <div id="tb-prog">Q<span id="prog-cur">1</span>/{{ total_questions }}</div>
+  {% if exam.time_limit_minutes %}
+  <div id="tb-timer">
+    <svg width="15" height="15" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg>
+    <span id="timer-val">--:--</span>
+  </div>
+  {% endif %}
+  {% if exam.allow_calculator %}<button class="tb-btn" id="btn-calc">Calc</button>{% endif %}
+  {% if exam.allow_scratch_pad %}<button class="tb-btn" id="btn-scratch">Pad</button>{% endif %}
+  <button class="tb-btn" id="btn-submit">Submit</button>
+</div>
+
+<div id="exam-layout">
+  <div id="palette">
+    <div>
+      <h3 style="margin-bottom:8px">Sections</h3>
+      <div id="section-chips" style="display:flex;flex-direction:column;gap:4px"></div>
+    </div>
+    <div>
+      <h3 style="margin-bottom:8px">Questions</h3>
+      <div class="pal-grid" id="pal-grid"></div>
+    </div>
+    <div class="pal-legend">
+      <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:4px">Legend</div>
+      <div class="pal-leg-item"><span class="pal-leg-dot" style="background:var(--accent)"></span>Current</div>
+      <div class="pal-leg-item"><span class="pal-leg-dot" style="background:rgba(16,185,129,.2);border:1.5px solid #10b981"></span>Answered</div>
+      <div class="pal-leg-item"><span class="pal-leg-dot" style="background:var(--white);border:1.5px solid var(--border)"></span>Not answered</div>
+      <div class="pal-leg-item"><span class="pal-leg-dot" style="background:var(--amber);border-radius:50%"></span>Flagged</div>
+    </div>
+  </div>
+
+  <div id="q-area">
+    <div class="q-card" id="q-card">
+      <div class="q-meta" id="q-meta"></div>
+      <div class="q-stem" id="q-stem"></div>
+      <div id="q-body"></div>
+      <div class="practice-fb" id="practice-fb"></div>
+    </div>
+    <div style="max-width:820px;width:100%;margin:0 auto;padding:0 0 20px">
+      <div id="q-nav" style="position:static;border-radius:12px;margin-top:0">
+        <button class="nav-btn nav-btn-prev" id="nav-prev" onclick="navigate(-1)">← Prev</button>
+        <button class="nav-btn nav-flag" id="nav-flag" onclick="toggleFlag()" style="background:var(--surface2);color:var(--text)">
+          <svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 4h13l-3 5 3 5H3V4z"/></svg>
+          Flag
+        </button>
+        <div style="flex:1;text-align:center;font-size:11px;color:var(--muted)" id="nav-status"></div>
+        <button class="nav-btn nav-btn-next" id="nav-next" onclick="navigate(1)">Next →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="submit-modal" style="display:none">
+  <div class="modal">
+    <h2>Submit Exam?</h2>
+    <p id="submit-summary"></p>
+    <div class="modal-actions">
+      <button class="modal-btn modal-btn-cancel" onclick="closeModal()">Continue Exam</button>
+      <form id="submit-form" data-url="{{ url('examhub:submit', attempt.pk) }}">
+        {{ csrf_input }}
+        <button type="button" class="modal-btn modal-btn-submit" onclick="doFinalSubmit()">Submit Now</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div id="calc-panel">
+  <div id="calc-display">
+    <div id="calc-expr"></div>
+    <div id="calc-val">0</div>
+  </div>
+  <div class="calc-grid">
+    <button class="calc-btn clr" data-val="C">C</button>
+    <button class="calc-btn clr" data-val="±">±</button>
+    <button class="calc-btn clr" data-val="%">%</button>
+    <button class="calc-btn op" data-val="÷">÷</button>
+    <button class="calc-btn" data-val="7">7</button>
+    <button class="calc-btn" data-val="8">8</button>
+    <button class="calc-btn" data-val="9">9</button>
+    <button class="calc-btn op" data-val="×">×</button>
+    <button class="calc-btn" data-val="4">4</button>
+    <button class="calc-btn" data-val="5">5</button>
+    <button class="calc-btn" data-val="6">6</button>
+    <button class="calc-btn op" data-val="−">−</button>
+    <button class="calc-btn" data-val="1">1</button>
+    <button class="calc-btn" data-val="2">2</button>
+    <button class="calc-btn" data-val="3">3</button>
+    <button class="calc-btn op" data-val="+">+</button>
+    <button class="calc-btn" data-val="0">0</button>
+    <button class="calc-btn" data-val=".">.</button>
+    <button class="calc-btn clr" data-val="DEL">DEL</button>
+    <button class="calc-btn eq" data-val="=">=</button>
+    <button class="calc-btn func" data-val="sin">sin</button>
+    <button class="calc-btn func" data-val="cos">cos</button>
+    <button class="calc-btn func" data-val="tan">tan</button>
+    <button class="calc-btn func" data-val="√">√</button>
+    <button class="calc-btn func" data-val="π">π</button>
+    <button class="calc-btn func" data-val="e">e</button>
+    <button class="calc-btn func" data-val="^">^</button>
+    <button class="calc-btn func" data-val="(">(</button>
+    <button class="calc-btn func" data-val=")">)</button>
+  </div>
+</div>
+
+<div id="scratch-panel">
+  <div id="scratch-header">
+    Scratch Pad
+    <button onclick="document.getElementById('scratch-panel').classList.remove('show')" style="background:none;border:none;cursor:pointer;color:var(--muted)">✕</button>
+  </div>
+  <textarea id="scratch-area" placeholder="Use this space for rough work. It won't be submitted."></textarea>
+</div>
+
+{{ exam_data_json|json_script("exam-data") }}
+<script>
+const EXAM = JSON.parse(document.getElementById('exam-data').textContent);
+const CSRF = '{{ csrf_token }}';
+const SAVE_URL = '{{ url("examhub:save_answer", attempt.pk) }}';
+const FLAG_URL = '{{ url("examhub:flag", attempt.pk) }}';
+const TAB_URL  = '{{ url("examhub:track_tab", attempt.pk) }}';
+const MODE = EXAM.mode;
+const IS_PRACTICE = MODE === 'practice';
+const ALLOW_CALC = {{ exam.allow_calculator|yesno("true,false") }};
+const ALLOW_PAD  = {{ exam.allow_scratch_pad|yesno("true,false") }};
+const DETECT_TAB = {{ exam.detect_tab_switch|yesno("true,false") }};
+const MAX_TABS   = {{ exam.max_tab_switches }};
+
+let currentIdx = 0;
+let state = {};
+let tabCount = 0;
+let timerInterval = null;
+let timeLeft = {{ time_remaining_seconds|default("null") }};
+
+function init() {
+  EXAM.questions.forEach(q => {
+    state[q.pk] = {
+      selected: q.saved_selected || [],
+      text: q.saved_text || '',
+      numeric: q.saved_numeric,
+      data: q.saved_data,
+      flagged: q.flagged,
+      answered: q.answered,
+    };
+  });
+  buildPalette();
+  buildSectionChips();
+  renderQuestion(currentIdx);
+  startTimer();
+  setupTabDetection();
+  setupFullscreen();
+}
+
+function buildPalette() {
+  const grid = document.getElementById('pal-grid');
+  grid.innerHTML = '';
+  EXAM.questions.forEach((q, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'pal-btn';
+    btn.textContent = i + 1;
+    btn.id = `pal-${i}`;
+    btn.onclick = () => saveCurrentAndGo(i);
+    grid.appendChild(btn);
+  });
+  refreshPalette();
+}
+
+function buildSectionChips() {
+  const wrap = document.getElementById('section-chips');
+  wrap.innerHTML = '';
+  EXAM.sections.forEach((sec, i) => {
+    const chip = document.createElement('button');
+    chip.className = 'pal-section-chip';
+    chip.textContent = sec.title;
+    chip.id = `sec-chip-${i}`;
+    chip.onclick = () => {
+      const qIdx = EXAM.questions.findIndex(q => q.section_pk === sec.pk);
+      if(qIdx >= 0) saveCurrentAndGo(qIdx);
+    };
+    wrap.appendChild(chip);
+  });
+}
+
+function refreshPalette() {
+  EXAM.questions.forEach((q, i) => {
+    const btn = document.getElementById(`pal-${i}`);
+    if(!btn) return;
+    btn.className = 'pal-btn';
+    const s = state[q.pk];
+    if(i === currentIdx) btn.classList.add('current');
+    else if(s && s.answered) btn.classList.add('answered');
+    if(s && s.flagged) btn.classList.add('flagged');
+    if(IS_PRACTICE && s && s.practice_correct === true) btn.classList.add('practice-correct');
+    if(IS_PRACTICE && s && s.practice_correct === false) btn.classList.add('practice-wrong');
+  });
+  const curQ = EXAM.questions[currentIdx];
+  EXAM.sections.forEach((sec, i) => {
+    const chip = document.getElementById(`sec-chip-${i}`);
+    if(chip) chip.classList.toggle('active', curQ && curQ.section_pk === sec.pk);
+  });
+}
+
+function renderQuestion(idx) {
+  currentIdx = idx;
+  const q = EXAM.questions[idx];
+  const s = state[q.pk] || {};
+  const meta = document.getElementById('q-meta');
+  meta.innerHTML = `
+    <span class="q-num-badge">Question ${idx+1} of ${EXAM.questions.length}</span>
+    <span class="q-type-badge">${formatType(q.type)}</span>
+    <button class="q-flag-btn ${s.flagged?'active':''}" id="q-flag-btn" onclick="toggleFlag()">
+      <svg width="12" height="12" viewBox="0 0 20 20" fill="${s.flagged?'var(--amber)':'none'}" stroke="currentColor" stroke-width="2"><path d="M3 4h13l-3 5 3 5H3V4z"/></svg>
+      ${s.flagged ? 'Unflag' : 'Flag for Review'}
+    </button>
+    <span class="q-pts-badge">${q.points} mark${q.points==1?'':'s'}</span>
+  `;
+  const stemEl = document.getElementById('q-stem');
+  stemEl.innerHTML = q.stem + (q.stem_image ? `<br><img src="${q.stem_image}" alt="">` : '');
+  const body = document.getElementById('q-body');
+  body.innerHTML = '';
+  body.appendChild(buildQuestionBody(q, s));
+  const fb = document.getElementById('practice-fb');
+  fb.className = 'practice-fb';
+  fb.innerHTML = '';
+  document.getElementById('nav-prev').disabled = idx === 0;
+  document.getElementById('nav-next').style.display = idx < EXAM.questions.length - 1 ? '' : 'none';
+  document.getElementById('prog-cur').textContent = idx + 1;
+  const navStatus = document.getElementById('nav-status');
+  const answered = countAnswered();
+  const flagged = countFlagged();
+  navStatus.innerHTML = `<span style="color:#10b981">${answered} answered</span>` +
+    (flagged ? ` &bull; <span style="color:var(--amber)">${flagged} flagged</span>` : '');
+  document.getElementById('tb-section').textContent = q.section_title;
+  refreshPalette();
+  renderMath(document.getElementById('q-card'));
+}
+
+function buildQuestionBody(q, s) {
+  const wrap = document.createElement('div');
+  const t = q.type;
+  if(t === 'mcq_single') {
+    wrap.innerHTML = '<div class="q-instr">Select one answer</div>';
+    (q.choices || []).forEach((ch, i) => {
+      const opt = makeChoiceOpt(ch.text, String.fromCharCode(65+i), i, s.selected||[], false);
+      opt.onclick = () => {
+        if(IS_PRACTICE && s.submitted) return;
+        state[q.pk].selected = [i];
+        state[q.pk].answered = true;
+        updateChoiceUI(wrap, q, [i]);
+        autoSave(q.pk, 'choice', [i]);
+      };
+      wrap.appendChild(opt);
+    });
+  } else if(t === 'mcq_multi') {
+    wrap.innerHTML = '<div class="q-instr">Select all that apply</div>';
+    (q.choices || []).forEach((ch, i) => {
+      const opt = makeChoiceOpt(ch.text, String.fromCharCode(65+i), i, s.selected||[], true);
+      opt.onclick = () => {
+        if(IS_PRACTICE && s.submitted) return;
+        const cur = [...(state[q.pk].selected || [])];
+        const idx2 = cur.indexOf(i);
+        if(idx2 >= 0) cur.splice(idx2,1); else cur.push(i);
+        state[q.pk].selected = cur;
+        state[q.pk].answered = cur.length > 0;
+        updateChoiceUI(wrap, q, cur);
+        autoSave(q.pk, 'choice', cur);
+      };
+      wrap.appendChild(opt);
+    });
+  } else if(t === 'true_false') {
+    wrap.innerHTML = '<div class="q-instr">Select True or False</div>';
+    const tfWrap = document.createElement('div');
+    tfWrap.style.cssText = 'display:flex;gap:12px;max-width:320px';
+    const curTF = s.data ? s.data.tf : null;
+    ['True','False'].forEach(val => {
+      const btn = document.createElement('button');
+      btn.className = 'tf-opt';
+      btn.textContent = val;
+      const boolVal = val === 'True';
+      if(curTF === boolVal) btn.classList.add(boolVal ? 'selected-true' : 'selected-false');
+      btn.onclick = () => {
+        if(IS_PRACTICE && s.submitted) return;
+        tfWrap.querySelectorAll('.tf-opt').forEach(b => b.className='tf-opt');
+        btn.classList.add(boolVal ? 'selected-true' : 'selected-false');
+        state[q.pk].data = {tf: boolVal};
+        state[q.pk].answered = true;
+        autoSave(q.pk, 'data', {tf: boolVal});
+      };
+      tfWrap.appendChild(btn);
+    });
+    wrap.appendChild(tfWrap);
+  } else if(t === 'fill_blank') {
+    const blanks = q.blank_answers || [];
+    const savedBlanks = (s.data && s.data.blanks) ? s.data.blanks : Array(blanks.length).fill('');
+    blanks.forEach((_, i) => {
+      const label = document.createElement('div');
+      label.style.cssText = 'font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px;margin-top:10px';
+      label.textContent = blanks.length > 1 ? `Blank ${i+1}` : 'Your Answer';
+      wrap.appendChild(label);
+      const inp = document.createElement('input');
+      inp.type = 'text';
+      inp.className = 'blank-standalone';
+      inp.placeholder = `Type your answer${blanks.length>1?' for blank '+(i+1):''}...`;
+      inp.value = savedBlanks[i] || '';
+      inp.oninput = () => {
+        const allBlanks = wrap.querySelectorAll('.blank-standalone');
+        const answers = [...allBlanks].map(b => b.value);
+        state[q.pk].data = {blanks: answers};
+        state[q.pk].answered = answers.some(a => a.trim());
+        autoSave(q.pk, 'data', {blanks: answers});
+      };
+      wrap.appendChild(inp);
+    });
+  } else if(t === 'numeric') {
+    wrap.innerHTML = `<div class="q-instr">Enter a numeric answer${q.numeric_unit ? ' (in '+q.numeric_unit+')' : ''}${q.numeric_tolerance ? ' — tolerance ±'+q.numeric_tolerance : ''}</div>`;
+    const numWrap = document.createElement('div');
+    numWrap.className = 'numeric-wrap';
+    const inp = document.createElement('input');
+    inp.type = 'number';
+    inp.className = 'numeric-input';
+    inp.placeholder = '0';
+    inp.step = 'any';
+    if(s.numeric !== null && s.numeric !== undefined) inp.value = s.numeric;
+    inp.oninput = () => {
+      const val = inp.value.trim();
+      state[q.pk].numeric = val ? parseFloat(val) : null;
+      state[q.pk].answered = !!val;
+      autoSave(q.pk, 'numeric', val ? parseFloat(val) : null);
+    };
+    numWrap.appendChild(inp);
+    if(q.numeric_unit) {
+      const unit = document.createElement('span');
+      unit.className = 'numeric-unit';
+      unit.textContent = q.numeric_unit;
+      numWrap.appendChild(unit);
+    }
+    wrap.appendChild(numWrap);
+  } else if(t === 'theory') {
+    wrap.innerHTML = '<div class="q-instr">Write your answer in the space below</div>';
+    const ta = document.createElement('textarea');
+    ta.className = 'theory-area';
+    ta.placeholder = 'Write your answer here...';
+    ta.value = s.text || '';
+    const counter = document.createElement('div');
+    counter.className = 'theory-count';
+    counter.textContent = `${(s.text||'').length} characters`;
+    ta.oninput = () => {
+      state[q.pk].text = ta.value;
+      state[q.pk].answered = ta.value.trim().length > 0;
+      counter.textContent = `${ta.value.length} characters`;
+      autoSave(q.pk, 'text', ta.value);
+    };
+    wrap.appendChild(ta);
+    wrap.appendChild(counter);
+  } else if(t === 'match') {
+    wrap.innerHTML = '<div class="q-instr">Click an item on the left, then click its match on the right</div>';
+    const layout = document.createElement('div');
+    layout.className = 'match-layout';
+    const leftCol = document.createElement('div');
+    leftCol.innerHTML = '<div class="match-col-title">Column A</div>';
+    const rightCol = document.createElement('div');
+    rightCol.innerHTML = '<div class="match-col-title">Column B</div>';
+    let selectedLeft = null;
+    let pairs = (s.data && s.data.pairs) ? [...s.data.pairs] : [];
+    const getPairForLeft  = (li) => pairs.find(p=>p[0]===li);
+    const getPairForRight = (ri) => pairs.find(p=>p[1]===ri);
+    const refreshMatch = () => {
+      [...leftCol.querySelectorAll('.match-item')].forEach((el, li) => {
+        const p = getPairForLeft(li);
+        el.className = 'match-item';
+        if(li === selectedLeft) el.classList.add('selected-left');
+        if(p) { el.classList.add('matched'); el.dataset.match = `→ ${q.match_right[p[1]]||''}`; }
+        else delete el.dataset.match;
+      });
+      [...rightCol.querySelectorAll('.match-item')].forEach((el, ri) => {
+        const p = getPairForRight(ri);
+        el.className = 'match-item match-right-item';
+        if(p) el.classList.add('matched');
+      });
+    };
+    (q.match_left || []).forEach((text, li) => {
+      const el = document.createElement('div');
+      el.className = 'match-item';
+      el.textContent = text;
+      el.onclick = () => {
+        if(IS_PRACTICE && s.submitted) return;
+        selectedLeft = (selectedLeft === li) ? null : li;
+        refreshMatch();
+      };
+      leftCol.appendChild(el);
+    });
+    (q.match_right || []).forEach((text, ri) => {
+      const el = document.createElement('div');
+      el.className = 'match-item match-right-item';
+      el.textContent = text;
+      el.onclick = () => {
+        if(IS_PRACTICE && s.submitted) return;
+        if(selectedLeft === null) return;
+        pairs = pairs.filter(p=>p[0]!==selectedLeft && p[1]!==ri);
+        pairs.push([selectedLeft, ri]);
+        selectedLeft = null;
+        state[q.pk].data = {pairs};
+        state[q.pk].answered = pairs.length > 0;
+        autoSave(q.pk, 'data', {pairs});
+        refreshMatch();
+      };
+      rightCol.appendChild(el);
+    });
+    layout.appendChild(leftCol);
+    layout.appendChild(rightCol);
+    wrap.appendChild(layout);
+    refreshMatch();
+    const clearBtn = document.createElement('button');
+    clearBtn.textContent = 'Clear Matches';
+    clearBtn.style.cssText = 'margin-top:10px;font-size:11px;color:var(--primary);background:none;border:none;cursor:pointer;font-weight:700';
+    clearBtn.onclick = () => { pairs=[]; selectedLeft=null; state[q.pk].data={pairs}; state[q.pk].answered=false; autoSave(q.pk,'data',{pairs}); refreshMatch(); };
+    wrap.appendChild(clearBtn);
+  } else if(t === 'order') {
+    wrap.innerHTML = '<div class="q-instr">Drag the items below into the correct order</div>';
+    const items = q.order_items || [];
+    const savedOrder = (s.data && s.data.order) ? s.data.order : items.map((_,i)=>i);
+    const ol = document.createElement('ul');
+    ol.className = 'order-list';
+    let draggingEl = null;
+    const renderOrder = () => {
+      ol.innerHTML = '';
+      savedOrder.forEach((origIdx, pos) => {
+        const li = document.createElement('li');
+        li.className = 'order-item';
+        li.draggable = true;
+        li.dataset.origIdx = origIdx;
+        li.innerHTML = `<div class="order-handle">⠿</div><div class="order-idx">${pos+1}</div><div style="flex:1;font-size:13px">${items[origIdx]||''}</div>`;
+        li.ondragstart = () => { draggingEl = li; setTimeout(()=>li.classList.add('dragging'),0); };
+        li.ondragend = () => { li.classList.remove('dragging'); draggingEl=null; refreshOrderState(); };
+        li.ondragover = (e) => { e.preventDefault(); if(draggingEl && draggingEl!==li) li.classList.add('drag-over'); };
+        li.ondragleave = () => li.classList.remove('drag-over');
+        li.ondrop = (e) => {
+          e.preventDefault();
+          li.classList.remove('drag-over');
+          if(draggingEl && draggingEl!==li){
+            const items2=[...ol.querySelectorAll('.order-item')];
+            const fromI=items2.indexOf(draggingEl);
+            const toI=items2.indexOf(li);
+            if(fromI<toI) li.after(draggingEl); else li.before(draggingEl);
+            refreshOrderState();
+          }
+        };
+        ol.appendChild(li);
+      });
+    };
+    const refreshOrderState = () => {
+      const newOrder=[...ol.querySelectorAll('.order-item')].map(el=>parseInt(el.dataset.origIdx));
+      newOrder.forEach((oi,pos)=>{
+        const idxEl=ol.querySelectorAll('.order-idx')[pos];
+        if(idxEl) idxEl.textContent=pos+1;
+      });
+      state[q.pk].data={order:newOrder};
+      state[q.pk].answered=true;
+      autoSave(q.pk,'data',{order:newOrder});
+    };
+    renderOrder();
+    wrap.appendChild(ol);
+  } else if(t === 'category') {
+    wrap.innerHTML = '<div class="q-instr">Drag each item into the correct category</div>';
+    const cats = q.categories || [];
+    const items = q.category_items || [];
+    let catState = (s.data && s.data.cats) ? {...s.data.cats} : {};
+    const pool = document.createElement('div');
+    pool.className = 'cat-items-pool';
+    pool.ondragover = (e) => { e.preventDefault(); pool.classList.add('drag-over'); };
+    pool.ondragleave = () => pool.classList.remove('drag-over');
+    pool.ondrop = (e) => {
+      e.preventDefault();
+      pool.classList.remove('drag-over');
+      const itemIdx = parseInt(e.dataTransfer.getData('itemIdx'));
+      delete catState[itemIdx];
+      state[q.pk].data = {cats: catState};
+      state[q.pk].answered = Object.keys(catState).length > 0;
+      autoSave(q.pk, 'data', {cats: catState});
+      renderCatState();
+    };
+    const renderCatState = () => {
+      pool.innerHTML = '';
+      const buckets = wrap.querySelectorAll('.cat-bucket');
+      buckets.forEach(b => { while(b.children.length>1) b.removeChild(b.lastChild); });
+      items.forEach((item, itemIdx) => {
+        const chip = makeChip(item, itemIdx);
+        if(catState[itemIdx] !== undefined) {
+          const bucket = buckets[catState[itemIdx]];
+          if(bucket) bucket.appendChild(chip);
+        } else pool.appendChild(chip);
+      });
+    };
+    const makeChip = (text, itemIdx) => {
+      const chip = document.createElement('div');
+      chip.className = 'cat-chip';
+      chip.draggable = true;
+      chip.textContent = text;
+      chip.dataset.itemIdx = itemIdx;
+      chip.ondragstart = (e) => { e.dataTransfer.setData('itemIdx', itemIdx); chip.style.opacity='.4'; };
+      chip.ondragend = () => { chip.style.opacity=''; };
+      return chip;
+    };
+    wrap.appendChild(pool);
+    cats.forEach((cat, catIdx) => {
+      const bucket = document.createElement('div');
+      bucket.className = 'cat-bucket';
+      bucket.innerHTML = `<div class="cat-bucket-title">${cat}</div>`;
+      bucket.ondragover = (e) => { e.preventDefault(); bucket.classList.add('drag-over'); };
+      bucket.ondragleave = () => bucket.classList.remove('drag-over');
+      bucket.ondrop = (e) => {
+        e.preventDefault();
+        bucket.classList.remove('drag-over');
+        const itemIdx = parseInt(e.dataTransfer.getData('itemIdx'));
+        catState[itemIdx] = catIdx;
+        state[q.pk].data = {cats: catState};
+        state[q.pk].answered = Object.keys(catState).length > 0;
+        autoSave(q.pk, 'data', {cats: catState});
+        renderCatState();
+      };
+      wrap.appendChild(bucket);
+    });
+    renderCatState();
+  }
+  return wrap;
+}
+
+function makeChoiceOpt(text, letter, idx, selected, multi) {
+  const opt = document.createElement('div');
+  opt.className = 'choice-opt' + (selected.includes(idx) ? ' selected' : '');
+  opt.dataset.idx = idx;
+  opt.innerHTML = `<span class="choice-label">${letter}</span><span class="choice-text">${text}</span>`;
+  return opt;
+}
+
+function updateChoiceUI(wrap, q, selected) {
+  wrap.querySelectorAll('.choice-opt').forEach((el, i) => {
+    el.className = 'choice-opt' + (selected.includes(i) ? ' selected' : '');
+  });
+}
+
+function renderMath(el) {
+  if(!el) return;
+  if(window.renderMathInElement) {
+    renderMathInElement(el, {
+      delimiters: [
+        {left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false},
+        {left:'\\[',right:'\\]',display:true},{left:'\\(',right:'\\)',display:false}
+      ],
+      throwOnError: false
+    });
+  }
+}
+
+function formatType(t) {
+  const map={mcq_single:'MCQ Single',mcq_multi:'MCQ Multi',true_false:'True/False',fill_blank:'Fill Blank',numeric:'Numeric',theory:'Theory/Essay',match:'Match Pairs',order:'Ordering',category:'Categories'};
+  return map[t] || t;
+}
+
+function countAnswered() { return EXAM.questions.filter(q => state[q.pk] && state[q.pk].answered).length; }
+function countFlagged()  { return EXAM.questions.filter(q => state[q.pk] && state[q.pk].flagged).length; }
+
+function navigate(dir) {
+  const next = currentIdx + dir;
+  if(next < 0 || next >= EXAM.questions.length) return;
+  saveCurrentAndGo(next);
+}
+
+function saveCurrentAndGo(idx) {
+  currentIdx = idx;
+  renderQuestion(idx);
+  document.getElementById('q-area').scrollTo({top:0, behavior:'smooth'});
+}
+
+function toggleFlag() {
+  const q = EXAM.questions[currentIdx];
+  state[q.pk].flagged = !state[q.pk].flagged;
+  fetch(FLAG_URL, {
+    method:'POST',
+    headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
+    body: JSON.stringify({question_pk: q.pk, flagged: state[q.pk].flagged})
+  });
+  renderQuestion(currentIdx);
+}
+
+const saveDebounce = {};
+function autoSave(qpk, type, value) {
+  clearTimeout(saveDebounce[qpk]);
+  saveDebounce[qpk] = setTimeout(() => {
+    fetch(SAVE_URL, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
+      body: JSON.stringify({question_pk:qpk, type, value})
+    })
+    .then(r=>r.json())
+    .then(d => {
+      if(d.practice_feedback) {
+        showPracticeFeedback(qpk, d.correct, d.explanation, d.correct_display);
+      }
+    })
+    .catch(()=>{});
+  }, 400);
+}
+
+function showPracticeFeedback(qpk, correct, explanation, correctDisplay) {
+  const q = EXAM.questions.find(q=>q.pk===qpk);
+  if(!q) return;
+  state[qpk].practice_correct = correct;
+  state[qpk].submitted = true;
+  const fb = document.getElementById('practice-fb');
+  fb.className = 'practice-fb show ' + (correct ? 'correct' : 'wrong');
+  fb.innerHTML = `
+    <strong>${correct ? '✓ Correct!' : '✗ Incorrect'}</strong>
+    ${!correct && correctDisplay ? `<div style="margin-top:6px">Correct answer: <strong>${correctDisplay}</strong></div>` : ''}
+    ${explanation ? `<div style="margin-top:6px;opacity:.85">${explanation}</div>` : ''}
+  `;
+  renderMath(fb);
+  refreshPalette();
+}
+
+function startTimer() {
+  if(timeLeft === null) return;
+  const timerEl = document.getElementById('timer-val');
+  if(!timerEl) return;
+  updateTimerDisplay();
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    if(timeLeft <= 0) {
+      clearInterval(timerInterval);
+      timerEl.textContent = '00:00';
+      doFinalSubmit('timed_out');
+    } else {
+      updateTimerDisplay();
+    }
+  }, 1000);
+}
+
+function updateTimerDisplay() {
+  const timerEl = document.getElementById('timer-val');
+  const timerBox = document.getElementById('tb-timer');
+  if(!timerEl) return;
+  const m = Math.floor(timeLeft/60);
+  const s = timeLeft%60;
+  timerEl.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  timerBox.className = 'tb-timer';
+  if(timeLeft < 300) timerBox.classList.add('warn');
+  if(timeLeft < 60)  timerBox.classList.add('danger');
+}
+
+function doFinalSubmit(reason) {
+  const form = document.getElementById('submit-form');
+  let url = form.dataset.url;
+  if(reason) url += '?reason=' + encodeURIComponent(reason);
+  const csrf = form.querySelector('[name=csrfmiddlewaretoken]').value;
+  const answers = {};
+  const btn = form.querySelector('button');
+  if(btn) { btn.disabled = true; btn.textContent = 'Submitting…'; }
+  fetch(url, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrf},
+    body: JSON.stringify({answers})
+  })
+  .then(r => r.json())
+  .then(d => { if(d.ok) window.location.href = d.redirect; else { if(btn){btn.disabled=false;btn.textContent='Submit Now';} alert('Submission failed. Please try again.'); }})
+  .catch(() => { if(btn){btn.disabled=false;btn.textContent='Submit Now';} alert('Network error. Please try again.'); });
+}
+
+function setupTabDetection() {
+  if(!DETECT_TAB) return;
+  document.addEventListener('visibilitychange', () => {
+    if(document.hidden) {
+      tabCount++;
+      fetch(TAB_URL, {
+        method:'POST',
+        headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
+        body: JSON.stringify({count: tabCount})
+      });
+      const warn = document.getElementById('tab-warning');
+      document.getElementById('tab-warn-msg').textContent = `Tab switch detected! (${tabCount}/${MAX_TABS}). Too many switches may auto-submit your exam.`;
+      warn.classList.add('show');
+      if(tabCount >= MAX_TABS) setTimeout(() => doFinalSubmit('tab_exceeded'), 2000);
+    }
+  });
+}
+
+function setupFullscreen() {
+  if(!{{ exam.require_fullscreen|yesno("true,false") }}) return;
+  if(document.documentElement.requestFullscreen) {
+    document.documentElement.requestFullscreen().catch(()=>{});
+  }
+}
+
+document.getElementById('btn-submit').onclick = () => {
+  const answered = countAnswered();
+  const total    = EXAM.questions.length;
+  const flagged  = countFlagged();
+  document.getElementById('submit-summary').innerHTML = `
+    You have answered <strong>${answered}</strong> of <strong>${total}</strong> question${total===1?'':'s'}.
+    ${total-answered > 0 ? `<span style="color:#e11d48"> ${total-answered} unanswered.</span>` : ''}
+    ${flagged ? `<br><span style="color:var(--amber)">${flagged} question${flagged===1?'':'s'} flagged for review.</span>` : ''}
+    <br>Are you sure you want to submit?
+  `;
+  document.getElementById('submit-modal').style.display='flex';
+};
+function closeModal() { document.getElementById('submit-modal').style.display='none'; }
+
+if(ALLOW_CALC) {
+  const panel = document.getElementById('calc-panel');
+  const valEl = document.getElementById('calc-val');
+  const exprEl = document.getElementById('calc-expr');
+  let calcExpr = '';
+  document.getElementById('btn-calc').onclick = () => panel.classList.toggle('show');
+  panel.querySelectorAll('.calc-btn').forEach(btn => {
+    btn.onclick = () => {
+      const v = btn.dataset.val;
+      if(v==='C') { calcExpr=''; valEl.textContent='0'; exprEl.textContent=''; }
+      else if(v==='DEL') { calcExpr=calcExpr.slice(0,-1); evalCalc(); }
+      else if(v==='=') { evalCalc(true); }
+      else if(v==='±') { calcExpr=calcExpr.startsWith('-')?calcExpr.slice(1):'-'+calcExpr; evalCalc(); }
+      else if(v==='%') { try{calcExpr=String(parseFloat(calcExpr)/100);}catch(e){} evalCalc(); }
+      else if(v==='π') { calcExpr+=String(Math.PI); evalCalc(); }
+      else if(v==='e') { calcExpr+=String(Math.E); evalCalc(); }
+      else if(v==='√') { calcExpr='Math.sqrt('+calcExpr+')'; evalCalc(true); }
+      else if(v==='sin') { calcExpr='Math.sin('+calcExpr+')'; evalCalc(true); }
+      else if(v==='cos') { calcExpr='Math.cos('+calcExpr+')'; evalCalc(true); }
+      else if(v==='tan') { calcExpr='Math.tan('+calcExpr+')'; evalCalc(true); }
+      else if(v==='÷') { calcExpr+='/'; evalCalc(); }
+      else if(v==='×') { calcExpr+='*'; evalCalc(); }
+      else if(v==='−') { calcExpr+='-'; evalCalc(); }
+      else if(v==='^') { calcExpr+='**'; evalCalc(); }
+      else { calcExpr+=v; evalCalc(); }
+    };
+  });
+  function evalCalc(final) {
+    exprEl.textContent = calcExpr;
+    try {
+      const result = Function('"use strict";return ('+calcExpr+')')();
+      valEl.textContent = isFinite(result) ? parseFloat(result.toFixed(10)).toString() : 'Error';
+      if(final) { calcExpr=valEl.textContent; exprEl.textContent=''; }
+    } catch(e) { valEl.textContent = calcExpr || '0'; }
+  }
+}
+
+if(ALLOW_PAD) {
+  document.getElementById('btn-scratch').onclick = () => {
+    document.getElementById('scratch-panel').classList.toggle('show');
+  };
+}
+
+document.getElementById('pal-toggle').onclick = () => {
+  document.getElementById('palette').classList.toggle('open');
+};
+
+init();
+window.onbeforeunload = () => 'Your exam is in progress. Leave anyway?';
+</script>
+</body>
+</html>

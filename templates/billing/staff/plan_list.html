@@ -1,0 +1,55 @@
+{% extends "layout/staff_shell.html" %}
+{% block page_title %}Plans{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="page-head-title">Plans</div>
+    <div class="page-head-sub">{{ plans|length }} plan{{ plans|length|pluralize }} — for manual, one-off access grants (e.g. a free scholarship or staff account). Every department's own price is set once, for every department, on the <a href="{{ url('billing:tier_list') }}" style="color:var(--primary);font-weight:700">Pricing</a> page, and applicants get access automatically when they subscribe — you don't need a Plan for that.</div>
+  </div>
+  <div class="page-head-actions">
+    <a href="{{ url('billing:plan_add') }}" class="btn btn-primary">+ New Plan</a>
+  </div>
+</div>
+
+{% if plans %}
+<div class="card-grid">
+  {% for plan in plans %}
+  <div class="entity-card">
+    <div class="entity-card-head">
+      <div class="icon-chip icon-chip-lg" style="background:rgba(91,94,244,.1)">💳</div>
+      <div>
+        <div class="entity-card-title">{{ plan.name }}</div>
+        <div class="entity-card-sub">₦{{ plan.price|floatformat(0)|intcomma }} · {{ plan.duration_days }} day{{ plan.duration_days|pluralize }}</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:.4rem;flex-wrap:wrap">
+      {% if plan.is_all_access %}
+        <span class="pill pill-green">All access</span>
+      {% else %}
+        {% for subject in plan.subjects %}<span class="pill pill-gray">{{ subject.icon }} {{ subject.name }}</span>{% endfor %}
+        {% for bundle in plan.bundles %}<span class="pill pill-gray">🎯 {{ bundle.name }}</span>{% endfor %}
+      {% endif %}
+    </div>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+      <span class="pill {% if plan.is_active %}pill-green{% else %}pill-gray{% endif %}">{% if plan.is_active %}Active{% else %}Inactive{% endif %}</span>
+    </div>
+    <div class="entity-card-foot">
+      <a href="{{ url('billing:plan_edit', plan.pk) }}" class="btn btn-outline btn-sm">Edit</a>
+      <form method="post" action="{{ url('billing:plan_delete', plan.pk) }}" style="display:inline;margin-left:auto" onsubmit="return confirm('Delete this plan?');">
+        {{ csrf_input }}<button type="submit" class="btn btn-outline btn-sm" style="color:#e11d48">Delete</button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card">
+  <div class="empty-pro">
+    <div class="empty-pro-icon">💳</div>
+    <div class="empty-pro-title">No manual plans yet</div>
+    <div class="empty-pro-sub">You likely don't need one — departments are priced automatically on the Pricing page. Create a Plan only for a one-off free or custom grant.</div>
+    <a href="{{ url('billing:tier_list') }}" class="btn btn-primary" style="margin-top:1rem">Go to Pricing instead</a>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

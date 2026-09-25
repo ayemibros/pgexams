@@ -1,0 +1,62 @@
+{% extends "layout/staff_shell.html" %}
+{% block page_title %}Subscriptions{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="page-head-title">Subscriptions</div>
+    <div class="page-head-sub">{{ subscriptions|length }} subscription{{ subscriptions|length|pluralize }}</div>
+  </div>
+  <div class="page-head-actions">
+    <form method="get" style="display:flex;gap:.5rem">
+      <input type="text" name="q" class="form-input" placeholder="Search student…" value="{{ filters.q }}">
+      <select name="status" class="form-select" onchange="this.form.submit()">
+        <option value="">All statuses</option>
+        {% for val, label in status_choices %}<option value="{{ val }}" {% if filters.status == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+      <button type="submit" class="btn btn-outline btn-sm">Search</button>
+    </form>
+    <a href="{{ url('billing:subscription_add') }}" class="btn btn-primary">+ Grant Subscription</a>
+  </div>
+</div>
+
+{% if subscriptions %}
+<div class="card">
+  <table class="table">
+    <thead><tr><th>Student</th><th>Plan</th><th>Status</th><th>Starts</th><th>Ends</th><th>Granted by</th><th></th></tr></thead>
+    <tbody>
+      {% for sub in subscriptions %}
+      <tr>
+        <td><div style="font-weight:700">{{ sub.student.get_full_name|default(sub.student.username) }}</div><div style="font-size:.7rem;color:#9ca3af">{{ sub.student.registration_number }}</div></td>
+        <td>{{ sub.plan.name }}</td>
+        <td>
+          {% if sub.is_active_now %}<span class="pill pill-green">Active</span>
+          {% elif sub.status == 'cancelled' %}<span class="pill pill-red">Cancelled</span>
+          {% else %}<span class="pill pill-gray">{{ sub.get_status_display }}</span>{% endif %}
+        </td>
+        <td>{{ sub.starts_at|date("d M Y") }}</td>
+        <td>{{ sub.ends_at|date("d M Y") }}</td>
+        <td>{{ sub.created_by.get_full_name|default(sub.created_by.username)|default("—") }}</td>
+        <td>
+          <div class="row-actions" style="display:flex;gap:.3rem;justify-content:flex-end">
+            <a href="{{ url('billing:subscription_edit', sub.pk) }}" class="btn btn-outline btn-sm">Edit</a>
+            {% if sub.status == 'active' %}
+            <form method="post" action="{{ url('billing:subscription_cancel', sub.pk) }}" style="display:inline" onsubmit="return confirm('Cancel this subscription?');">{{ csrf_input }}<button type="submit" class="btn btn-outline btn-sm" style="color:#e11d48">Cancel</button></form>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card">
+  <div class="empty-pro">
+    <div class="empty-pro-icon">💳</div>
+    <div class="empty-pro-title">No subscriptions yet</div>
+    <div class="empty-pro-sub">Grant a subscription to a student to give them access to a subject or program's exams.</div>
+    <a href="{{ url('billing:subscription_add') }}" class="btn btn-primary" style="margin-top:1rem">+ Grant Subscription</a>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

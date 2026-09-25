@@ -1,0 +1,69 @@
+{% extends "layout/staff_shell.html" %}
+{% block page_title %}{{ bank.name }}{% endblock %}
+{% block content %}
+<style>
+.qtype-icon{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:var(--surface2);font-size:.7rem;margin-right:.4rem;flex-shrink:0}
+</style>
+<a href="{{ url('examhub:bank_list') }}" style="font-size:.75rem;color:#9ca3af;text-decoration:none;display:inline-block;margin-bottom:.5rem">← All banks</a>
+<div class="page-head">
+  <div>
+    <div class="page-head-title">{{ bank.name }}</div>
+    <div class="page-head-sub">{{ bank.subject.name|default("No subject") }} &bull; {{ questions|length }} question{{ questions|length|pluralize }}</div>
+  </div>
+  <div class="page-head-actions">
+    <a href="{{ url('examhub:bulk_upload', bank.pk) }}" class="btn btn-outline">⬆ Bulk Upload</a>
+    <a href="{{ url('examhub:question_add', bank.pk) }}" class="btn btn-primary">+ Add Question</a>
+  </div>
+</div>
+
+<form method="get" style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem">
+  <input type="text" name="q" class="form-input" style="max-width:220px" placeholder="🔍 Search stem…" value="{{ filters.q }}">
+  <select name="type" class="form-select" style="max-width:200px">
+    <option value="">Any type</option>
+    {% for val, label in type_choices %}<option value="{{ val }}" {% if filters.type == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+  </select>
+  <select name="difficulty" class="form-select" style="max-width:160px">
+    <option value="">Any difficulty</option>
+    {% for val, label in difficulty_choices %}<option value="{{ val }}" {% if filters.difficulty == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+  </select>
+  <input type="text" name="topic" class="form-input" style="max-width:180px" placeholder="Topic" value="{{ filters.topic }}">
+  <button type="submit" class="btn btn-outline">Filter</button>
+</form>
+
+{% if questions %}
+<div class="card">
+  <table class="table">
+    <thead><tr><th>Question</th><th>Type</th><th>Difficulty</th><th>Topic</th><th>Points</th><th></th></tr></thead>
+    <tbody>
+      {% for q in questions %}
+      <tr>
+        <td style="max-width:360px">{{ q.stem|striptags|truncatechars(90) }}</td>
+        <td>{{ q.get_question_type_display }}</td>
+        <td><span class="pill {% if q.difficulty == 'hard' %}pill-red{% elif q.difficulty == 'medium' %}pill-amber{% else %}pill-green{% endif %}">{{ q.get_difficulty_display }}</span></td>
+        <td>{{ q.topic|default("—") }}</td>
+        <td>{{ q.default_points }}</td>
+        <td style="text-align:right;white-space:nowrap">
+          <a href="{{ url('examhub:question_edit', bank.pk, q.pk) }}" class="btn btn-outline btn-sm">Edit</a>
+          <form method="post" action="{{ url('examhub:question_delete', bank.pk, q.pk) }}" style="display:inline" onsubmit="return confirm('Delete this question?');">
+            {{ csrf_input }}<button type="submit" class="btn btn-outline btn-sm" style="color:#e11d48">Delete</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card">
+  <div class="empty-pro">
+    <div class="empty-pro-icon">❓</div>
+    <div class="empty-pro-title">No questions match yet</div>
+    <div class="empty-pro-sub">Add one manually, or import a batch with Bulk Upload — CSV and JSON are both supported.</div>
+    <div style="display:flex;gap:.5rem;justify-content:center;margin-top:1rem">
+      <a href="{{ url('examhub:question_add', bank.pk) }}" class="btn btn-primary">+ Add Question</a>
+      <a href="{{ url('examhub:bulk_upload', bank.pk) }}" class="btn btn-outline">⬆ Bulk Upload</a>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

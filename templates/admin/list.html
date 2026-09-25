@@ -1,0 +1,53 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ model.name }}{% endblock %}
+{% block crumbs %}<a href="/admin/">Home</a> › {{ model.app }} › {{ model.name }}{% endblock %}
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:1rem">
+  <h1 style="margin:0">{{ model.name }} <span class="muted">({{ total }})</span></h1>
+  <a href="/admin/{{ model.key }}/add/" class="btn btn-primary">+ Add</a>
+</div>
+
+<form method="get" style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem;align-items:center">
+  {% if model.search|length %}<input type="text" name="q" value="{{ q }}" placeholder="Search {{ model.search|join(', ') }}" style="max-width:320px">{% endif %}
+  {% for f in filters %}
+  <select name="{{ f.field }}" style="max-width:200px">
+    <option value="">{{ f.field }}: all</option>
+    {% for v in f.values %}<option value="{{ v }}" {% if f.current == v %}selected{% endif %}>{{ f.field }} = {{ v }}</option>{% endfor %}
+  </select>
+  {% endfor %}
+  <button type="submit" class="btn">Filter</button>
+  <a href="/admin/{{ model.key }}/" class="muted">Reset</a>
+</form>
+
+<form method="post">
+  {{ csrf_input }}
+  <div class="card" style="overflow-x:auto">
+    <table>
+      <thead><tr><th style="width:28px"><input type="checkbox" onclick="document.querySelectorAll('.sel').forEach(c=>c.checked=this.checked)"></th><th>ID</th>{% for h in headers %}<th>{{ h }}</th>{% endfor %}<th></th></tr></thead>
+      <tbody>
+        {% for r in rows %}
+        <tr>
+          <td><input type="checkbox" class="sel" name="_selected" value="{{ r.id }}"></td>
+          <td><a href="/admin/{{ model.key }}/{{ r.id }}/change/">{{ r.id }}</a></td>
+          {% for c in r.cells %}<td>{{ c }}</td>{% endfor %}
+          <td style="white-space:nowrap"><a href="/admin/{{ model.key }}/{{ r.id }}/change/">Change</a> · <a href="/admin/{{ model.key }}/{{ r.id }}/delete/" style="color:#e11d48">Delete</a></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="{{ headers|length + 3 }}" class="muted" style="padding:2rem;text-align:center">No records.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if rows|length %}
+  <button type="submit" name="action" value="delete_selected" class="btn btn-danger" onclick="return confirm('Delete the selected records? This cannot be undone.')">Delete selected</button>
+  {% endif %}
+</form>
+
+{% if pages > 1 %}
+<div style="margin-top:1rem;display:flex;gap:.4rem;flex-wrap:wrap">
+  {% for p in range(1, pages + 1) %}
+  {% if p == page %}<strong class="btn btn-primary">{{ p }}</strong>{% else %}<a class="btn" href="?p={{ p }}{% if q %}&q={{ q|urlencode }}{% endif %}{% for f in filters %}{% if f.current %}&{{ f.field }}={{ f.current|urlencode }}{% endif %}{% endfor %}">{{ p }}</a>{% endif %}
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

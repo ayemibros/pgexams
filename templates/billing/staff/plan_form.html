@@ -1,0 +1,69 @@
+{% extends "layout/staff_shell.html" %}
+{% block page_title %}{% if plan %}Edit Plan{% else %}New Plan{% endif %}{% endblock %}
+{% block content %}
+<div class="card" style="max-width:640px;padding:1.5rem">
+  <form method="post">
+    {{ csrf_input }}
+    <div class="form-row">
+      <label class="form-label">Plan name</label>
+      <input type="text" name="name" class="form-input" value="{{ plan.name|default('') }}" required>
+    </div>
+    <div class="form-row">
+      <label class="form-label">Description</label>
+      <textarea name="description" class="form-textarea">{{ plan.description|default('') }}</textarea>
+    </div>
+    <div class="form-row">
+      <label class="form-label">Price (₦)</label>
+      <input type="number" step="0.01" min="0" name="price" class="form-input" value="{{ plan.price|default(0) }}">
+    </div>
+    <div class="form-row">
+      <label class="form-label">Duration (days)</label>
+      <input type="number" min="1" name="duration_days" class="form-input" value="{{ plan.duration_days|default(30) }}">
+      <div class="form-hint">Used to auto-fill the expiry date when a subscription on this plan is granted.</div>
+    </div>
+    <div class="form-row">
+      <label class="form-check">
+        <input type="checkbox" name="is_all_access" id="is_all_access" onchange="document.getElementById('scope-fields').style.display=this.checked?'none':'block'" {% if plan.is_all_access %}checked{% endif %}>
+        All access (grants every subject and program, ignoring the selections below)
+      </label>
+    </div>
+    <div id="scope-fields" style="{% if plan.is_all_access %}display:none{% endif %}">
+      <div class="form-row">
+        <label class="form-label">Subjects</label>
+        <div class="checkbox-grid">
+          {% for subject in subjects %}
+          <label class="checkbox-chip">
+            <input type="checkbox" name="subjects[]" value="{{ subject.pk }}" {% if subject.pk in selected_subject_ids %}checked{% endif %}>
+            {{ subject.icon }} {{ subject.name }}
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+      {% if bundles %}
+      <div class="form-row">
+        <label class="form-label">Programs</label>
+        <div class="checkbox-grid">
+          {% for bundle in bundles %}
+          <label class="checkbox-chip">
+            <input type="checkbox" name="bundles[]" value="{{ bundle.pk }}" {% if bundle.pk in selected_bundle_ids %}checked{% endif %}>
+            {{ bundle.icon }} {{ bundle.name }}
+          </label>
+          {% endfor %}
+        </div>
+        <div class="form-hint">Postgraduate departments aren't listed here — their price is set once, for every department, on the Pricing page, and applicants get access automatically when they subscribe.</div>
+      </div>
+      {% else %}
+      <div class="form-hint" style="margin-bottom:1rem">No non-postgraduate programs to grant. Postgraduate departments aren't chosen here — their price is set once, for every department, on the <a href="{{ url('billing:tier_list') }}" style="color:var(--primary);font-weight:700">Pricing</a> page, and applicants get access automatically when they subscribe.</div>
+      {% endif %}
+    </div>
+    <div class="form-row">
+      <label class="form-check">
+        <input type="checkbox" name="is_active" {% if not plan or plan.is_active %}checked{% endif %}>
+        Active (can be granted to students)
+      </label>
+    </div>
+    <button type="submit" class="btn btn-primary">Save Plan</button>
+    <a href="{{ url('billing:plan_list') }}" class="btn btn-outline">Cancel</a>
+  </form>
+</div>
+{% endblock %}

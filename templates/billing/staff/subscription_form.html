@@ -1,0 +1,56 @@
+{% extends "layout/staff_shell.html" %}
+{% block page_title %}{% if subscription %}Edit Subscription{% else %}Grant Subscription{% endif %}{% endblock %}
+{% block content %}
+<div class="card" style="max-width:640px;padding:1.5rem">
+  <form method="get" style="display:flex;gap:.5rem;margin-bottom:1rem">
+    <input type="text" name="q" class="form-input" placeholder="Search student by name, username or reg. no…" value="{{ search }}">
+    <button type="submit" class="btn btn-outline btn-sm">Search</button>
+  </form>
+  <form method="post">
+    {{ csrf_input }}
+    <div class="form-row">
+      <label class="form-label">Student</label>
+      <select name="student" class="form-select" required>
+        <option value="">— Select a student —</option>
+        {% for s in students %}
+        <option value="{{ s.pk }}" {% if subscription.student_id == s.pk %}selected{% endif %}>
+          {{ s.get_full_name|default(s.username) }} ({{ s.registration_number }})
+        </option>
+        {% endfor %}
+      </select>
+      <div class="form-hint">{{ students|length }} student{{ students|length|pluralize }} match{% if not search %} (showing all){% endif %}.</div>
+    </div>
+    <div class="form-row">
+      <label class="form-label">Plan</label>
+      <select name="plan" class="form-select" required>
+        <option value="">— Select a plan —</option>
+        {% for p in plans %}<option value="{{ p.pk }}" {% if subscription.plan_id == p.pk %}selected{% endif %}>{{ p.name }} — ₦{{ p.price|floatformat(0)|intcomma }} / {{ p.duration_days }}d</option>{% endfor %}
+      </select>
+    </div>
+    <div class="form-row">
+      <label class="form-label">Status</label>
+      <select name="status" class="form-select">
+        <option value="active" {% if not subscription or subscription.status == 'active' %}selected{% endif %}>Active</option>
+        <option value="expired" {% if subscription.status == 'expired' %}selected{% endif %}>Expired</option>
+        <option value="cancelled" {% if subscription.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label class="form-label">Starts</label>
+      <input type="datetime-local" name="starts_at" class="form-input" value="{{ subscription.starts_at|date('Y-m-d\TH:i') }}">
+      <div class="form-hint">Leave blank to start now.</div>
+    </div>
+    <div class="form-row">
+      <label class="form-label">Ends</label>
+      <input type="datetime-local" name="ends_at" class="form-input" value="{{ subscription.ends_at|date('Y-m-d\TH:i') }}">
+      <div class="form-hint">Leave blank to auto-fill from the plan's duration.</div>
+    </div>
+    <div class="form-row">
+      <label class="form-label">Notes</label>
+      <input type="text" name="notes" class="form-input" placeholder="e.g. paid via bank transfer, ref #..." value="{{ subscription.notes|default('') }}">
+    </div>
+    <button type="submit" class="btn btn-primary">Save Subscription</button>
+    <a href="{{ url('billing:subscription_list') }}" class="btn btn-outline">Cancel</a>
+  </form>
+</div>
+{% endblock %}

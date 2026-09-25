@@ -1,0 +1,63 @@
+{% extends "layout/staff_shell.html" %}
+{% block page_title %}Pricing{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="page-head-title">Postgraduate pricing</div>
+    <div class="page-head-sub">One price list for every programme. An applicant pays the price below for each programme they add, for the length they choose.</div>
+  </div>
+</div>
+
+<div class="card" style="padding:0;max-width:760px">
+  {% if tiers %}
+  <form method="post">
+    {{ csrf_input }}
+    <table class="table">
+      <thead>
+        <tr><th>Access length</th><th>Price per programme (₦)</th><th>Available to applicants</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for t in tiers %}
+        <tr>
+          <td style="font-weight:700">{{ t.months }} month{{ t.months|pluralize }}</td>
+          <td style="width:220px">
+            <input type="number" name="price_{{ t.pk }}" class="form-input" value="{{ t.price|stringformat('d') }}" min="1" max="9999999" step="1" inputmode="numeric" required style="max-width:180px">
+          </td>
+          <td><label class="form-check"><input type="checkbox" name="active_{{ t.pk }}" {% if t.is_active %}checked{% endif %}> {% if t.is_active %}Active{% else %}Hidden{% endif %}</label></td>
+          <td style="text-align:right">
+            <button type="submit" class="btn btn-outline btn-sm" style="color:var(--primary)" formaction="{{ url('billing:tier_delete', t.pk) }}" onclick="return confirm('Remove the {{ t.months }}-month plan? Existing subscriptions are not affected.')">Remove</button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div style="padding:1rem 1.25rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap;border-top:1px solid var(--border)">
+      <button type="submit" class="btn btn-primary">Save prices</button>
+      <span class="form-hint" style="margin:0">Changes apply to new purchases straight away. People who already subscribed keep what they paid.</span>
+    </div>
+  </form>
+  {% else %}
+  <div class="empty-pro">
+    <div class="empty-pro-icon">💲</div>
+    <div class="empty-pro-title">No plan lengths yet</div>
+    <div class="empty-pro-sub">Add your first plan length below. Applicants can't subscribe until at least one is active.</div>
+  </div>
+  {% endif %}
+</div>
+
+<div class="card" style="padding:1.25rem;max-width:760px;margin-top:1.25rem">
+  <div class="form-section-lbl" style="margin:0 0 .75rem;padding:0;border:none">Add a plan length</div>
+  <form method="post" action="{{ url('billing:tier_add') }}" style="display:flex;gap:.75rem;align-items:flex-end;flex-wrap:wrap">
+    {{ csrf_input }}
+    <div>
+      <label class="form-label" for="new-months">Months</label>
+      <input id="new-months" type="number" name="months" class="form-input" min="1" max="36" step="1" placeholder="e.g. 6" required style="width:120px">
+    </div>
+    <div>
+      <label class="form-label" for="new-price">Price per programme (₦)</label>
+      <input id="new-price" type="number" name="price" class="form-input" min="1" max="9999999" step="1" placeholder="e.g. 20000" required style="width:200px">
+    </div>
+    <button type="submit" class="btn btn-outline">Add</button>
+  </form>
+</div>
+{% endblock %}

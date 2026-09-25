@@ -1,0 +1,26 @@
+{% extends "layout/public_base.html" %}
+{% block title %}Test payment{% endblock %}
+{% block content %}
+<main class="auth-main">
+  <div class="auth-card">
+    <span class="test-badge">Test mode</span>
+    <h1>Simulate payment</h1>
+    <p class="auth-sub">This stands in for Paystack while you test. <b>No real money is charged.</b></p>
+
+    <div class="sim-summary">
+      <div class="sim-row"><span>Plan</span><b>{{ payment.plan.name }}</b></div>
+      <div class="sim-programmes">
+        {% for p in programmes %}<span>{{ p.name }}</span>{% endfor %}
+      </div>
+      <div class="sim-row sim-total"><span>Amount</span><b>₦{{ payment.amount|floatformat(0)|intcomma }}</b></div>
+    </div>
+
+    <form method="post">
+      {{ csrf_input }}
+      <button type="submit" name="outcome" value="success" class="btn btn-primary btn-lg btn-block">Simulate successful payment</button>
+      <button type="submit" name="outcome" value="failed" class="btn btn-outline btn-block" style="margin-top:.6rem">Simulate failed payment</button>
+    </form>
+    <p class="auth-alt"><a href="{{ url('billing:plans_browse') }}">Cancel and go back</a></p>
+  </div>
+</main>
+{% endblock %}

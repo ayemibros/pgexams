@@ -1,0 +1,294 @@
+{% extends "layout/staff_shell.html" %}
+{% block page_title %}Bulk Upload — {{ bank.name }}{% endblock %}
+{% block content %}
+<style>
+.bu-wrap{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;align-items:start}
+@media(max-width:900px){.bu-wrap{grid-template-columns:1fr}}
+.bu-head{margin-bottom:1.1rem}
+.bu-title{font-size:1.1rem;font-weight:900;color:#111827}
+.bu-sub{font-size:.8125rem;color:#6b7280;margin-top:.2rem}
+.bu-templates{display:flex;gap:.6rem;margin-top:.6rem}
+.bu-tpl-link{display:inline-flex;align-items:center;gap:.35rem;font-size:.75rem;font-weight:700;color:#5b5ef4;text-decoration:none;background:rgba(91,94,244,.08);padding:.4rem .75rem;border-radius:8px}
+.bu-tpl-link:hover{background:rgba(91,94,244,.15)}
+
+.bu-tabs{display:flex;gap:.4rem;margin-bottom:1rem}
+.bu-tab{border:1.5px solid var(--border);background:#fff;border-radius:9px;padding:.5rem 1rem;font-size:.8125rem;font-weight:700;color:#6b7280;cursor:pointer}
+.bu-tab.active{background:#111827;color:#fff;border-color:#111827}
+.bu-panel{display:none}
+.bu-panel.active{display:block}
+
+.dropzone{border:2px dashed var(--border);border-radius:14px;padding:2.25rem 1.5rem;text-align:center;cursor:pointer;transition:all .15s;background:var(--surface)}
+.dropzone:hover,.dropzone.drag-over{border-color:var(--accent);background:rgba(91,94,244,.05)}
+.dropzone-icon{font-size:2rem;margin-bottom:.5rem}
+.dropzone-title{font-size:.85rem;font-weight:800;color:#111827}
+.dropzone-sub{font-size:.75rem;color:#9ca3af;margin-top:.25rem}
+.dropzone-file{margin-top:.9rem;display:inline-flex;align-items:center;gap:.5rem;background:#fff;border:1.5px solid var(--border);border-radius:9px;padding:.5rem .9rem;font-size:.75rem;font-weight:700;color:#111827}
+.dropzone-file button{border:none;background:none;color:var(--primary);cursor:pointer;font-weight:900}
+
+.bu-preview{border:1px solid var(--border);border-radius:14px;background:#fff;overflow:hidden;min-height:260px}
+.bu-preview-head{padding:.9rem 1.1rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.bu-preview-title{font-size:.8rem;font-weight:800;color:#111827}
+.bu-preview-count{font-size:.7rem;font-weight:700;color:#9ca3af;background:var(--surface2);padding:.2rem .6rem;border-radius:99px}
+.bu-preview-body{max-height:420px;overflow:auto}
+.bu-preview-empty{padding:3rem 1.5rem;text-align:center;color:#b0b6c0;font-size:.8125rem}
+.bu-preview-table{width:100%;border-collapse:collapse;font-size:.72rem}
+.bu-preview-table th{position:sticky;top:0;background:var(--surface2);text-align:left;padding:.45rem .6rem;font-weight:700;color:#6b7280;white-space:nowrap}
+.bu-preview-table td{padding:.45rem .6rem;border-top:1px solid #f1f2f4;color:#374151;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bu-preview-error{padding:1rem 1.1rem;color:#dc2626;font-size:.8rem;background:rgba(225,29,72,.05)}
+
+.bu-cheat{margin-top:1.25rem}
+.bu-cheat summary{cursor:pointer;font-size:.8rem;font-weight:700;color:#5b5ef4;padding:.4rem 0}
+.bu-cheat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.6rem;margin-top:.6rem}
+.bu-cheat-item{background:var(--surface2);border-radius:9px;padding:.6rem .8rem;font-size:.7rem;color:#374151;line-height:1.6}
+.bu-cheat-item b{color:#111827}
+
+.bu-summary{display:flex;gap:.9rem;flex-wrap:wrap;margin:1.25rem 0}
+.bu-sum-card{flex:1;min-width:120px;background:#fff;border:1px solid var(--border);border-radius:12px;padding:.9rem 1rem;text-align:center}
+.bu-sum-val{font-size:1.4rem;font-weight:900;line-height:1}
+.bu-sum-lbl{font-size:.65rem;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-top:.3rem}
+</style>
+
+<div class="bu-head">
+  <div class="bu-title">Bulk Upload — {{ bank.name }}</div>
+  <div class="bu-sub">Import many questions at once from a CSV or JSON file. All rows are sanitized and validated the same way as the manual question form.</div>
+  <div class="bu-templates">
+    <a href="{{ url('examhub:bulk_upload_template', 'json') }}" class="bu-tpl-link">⬇ JSON template</a>
+    <a href="{{ url('examhub:bulk_upload_template', 'csv') }}" class="bu-tpl-link">⬇ CSV template</a>
+  </div>
+</div>
+
+{% if result %}
+<div class="bu-summary">
+  <div class="bu-sum-card"><div class="bu-sum-val">{{ result.total_rows }}</div><div class="bu-sum-lbl">Rows in File</div></div>
+  <div class="bu-sum-card"><div class="bu-sum-val" style="color:#059669">{{ result.created_rows|length }}</div><div class="bu-sum-lbl">Imported</div></div>
+  <div class="bu-sum-card"><div class="bu-sum-val" style="color:{% if result.error_rows %}#e11d48{% else %}#9ca3af{% endif %}">{{ result.error_rows|length }}</div><div class="bu-sum-lbl">Skipped</div></div>
+</div>
+
+{% if result.created_rows %}
+<div class="card" style="margin-bottom:1.25rem">
+  <div style="padding:.9rem 1.1rem .5rem;font-weight:800;font-size:.8rem">✓ Imported Questions</div>
+  <table class="table">
+    <thead><tr><th>#</th><th>Type</th><th>Stem</th><th></th></tr></thead>
+    <tbody>
+      {% for row in result.created_rows %}
+      <tr>
+        <td>{{ row.row }}</td>
+        <td>{{ row.type }}</td>
+        <td>{{ row.stem|striptags|truncatechars(80) }}</td>
+        <td><a href="{{ url('examhub:question_edit', bank.pk, row.pk) }}" class="btn btn-outline btn-sm">Edit</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% if result.error_rows %}
+<div class="card" style="margin-bottom:1.25rem">
+  <div style="padding:.9rem 1.1rem .5rem;font-weight:800;font-size:.8rem;color:#e11d48">✗ Skipped Rows</div>
+  <table class="table">
+    <thead><tr><th>#</th><th>Reason</th><th>Raw data</th></tr></thead>
+    <tbody>
+      {% for row in result.error_rows %}
+      <tr>
+        <td>{{ row.row }}</td>
+        <td style="color:#dc2626">{{ row.reason }}</td>
+        <td style="font-family:monospace;font-size:.7rem;color:#9ca3af;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ row.raw_repr }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endif %}
+
+<div class="bu-wrap">
+  <div>
+    <div class="bu-tabs">
+      <button type="button" class="bu-tab active" data-tab="file">📁 Upload File</button>
+      <button type="button" class="bu-tab" data-tab="paste">📋 Paste JSON</button>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" id="bulk-form">
+      {{ csrf_input }}
+      <input type="hidden" name="fmt" id="fmt-field" value="json">
+
+      <div class="bu-panel active" data-panel="file">
+        <div class="dropzone" id="dropzone">
+          <div class="dropzone-icon">⬆</div>
+          <div class="dropzone-title">Drag a CSV or JSON file here</div>
+          <div class="dropzone-sub">or click to browse — max 5&nbsp;MB</div>
+          <div id="file-chip" style="display:none"></div>
+        </div>
+        <input type="file" name="bulk_file" id="file-input" accept=".json,.csv" style="display:none">
+      </div>
+
+      <div class="bu-panel" data-panel="paste">
+        <div class="form-row">
+          <label class="form-label">Paste a JSON array of questions</label>
+          <textarea name="raw_json" id="raw-json" class="form-textarea" style="min-height:220px;font-family:monospace;font-size:.75rem" placeholder='[{"type":"mcq_single","stem":"...","choices":[{"text":"...","is_correct":true}]}]'></textarea>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary" id="submit-btn" style="margin-top:1rem">Import Questions</button>
+      <a href="{{ url('examhub:bank_questions', bank.pk) }}" class="btn btn-outline">Back to Bank</a>
+    </form>
+
+    <details class="bu-cheat">
+      <summary>Field reference by question type</summary>
+      <div class="bu-cheat-grid">
+        <div class="bu-cheat-item"><b>All types:</b> type, stem, difficulty, topic, subtopic, points, year, explanation</div>
+        <div class="bu-cheat-item"><b>mcq_single / mcq_multi:</b> choice_a…choice_f, correct (e.g. "A" or "A,C")</div>
+        <div class="bu-cheat-item"><b>true_false:</b> answer (true/false)</div>
+        <div class="bu-cheat-item"><b>fill_blank:</b> answer (accepted words, "|" separated)</div>
+        <div class="bu-cheat-item"><b>numeric:</b> answer, tolerance, unit</div>
+        <div class="bu-cheat-item"><b>theory:</b> model_answer, keywords (comma-separated)</div>
+        <div class="bu-cheat-item"><b>match / order / category:</b> JSON-only — use the JSON template for these</div>
+      </div>
+    </details>
+  </div>
+
+  <div class="bu-preview">
+    <div class="bu-preview-head">
+      <div class="bu-preview-title">Live Preview</div>
+      <div class="bu-preview-count" id="preview-count">No file selected</div>
+    </div>
+    <div class="bu-preview-body" id="preview-body">
+      <div class="bu-preview-empty">Choose a file or paste JSON to see a quick preview before importing.<br><span style="font-size:.7rem">(This is a client-side sanity check only — the server re-validates everything on import.)</span></div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+{% block extra_js %}
+<script>
+(function () {
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('file-input');
+  const fileChip = document.getElementById('file-chip');
+  const fmtField = document.getElementById('fmt-field');
+  const rawJson = document.getElementById('raw-json');
+  const previewBody = document.getElementById('preview-body');
+  const previewCount = document.getElementById('preview-count');
+  const submitBtn = document.getElementById('submit-btn');
+
+  document.querySelectorAll('.bu-tab').forEach((tab) => {
+    tab.onclick = () => {
+      document.querySelectorAll('.bu-tab').forEach((t) => t.classList.remove('active'));
+      document.querySelectorAll('.bu-panel').forEach((p) => p.classList.remove('active'));
+      tab.classList.add('active');
+      document.querySelector(`.bu-panel[data-panel="${tab.dataset.tab}"]`).classList.add('active');
+      if (tab.dataset.tab === 'paste') { fmtField.value = 'json'; renderJsonPreview(rawJson.value); }
+      else if (fileInput.files.length) { previewFile(fileInput.files[0]); }
+      else { clearPreview(); }
+    };
+  });
+
+  dropzone.onclick = () => fileInput.click();
+  dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+  dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
+  dropzone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropzone.classList.remove('drag-over');
+    if (e.dataTransfer.files.length) {
+      fileInput.files = e.dataTransfer.files;
+      handleFileChosen(e.dataTransfer.files[0]);
+    }
+  });
+  fileInput.onchange = () => { if (fileInput.files.length) handleFileChosen(fileInput.files[0]); };
+
+  function handleFileChosen(file) {
+    fmtField.value = file.name.toLowerCase().endsWith('.csv') ? 'csv' : 'json';
+    fileChip.style.display = 'inline-flex';
+    fileChip.className = 'dropzone-file';
+    fileChip.innerHTML = `📄 ${file.name} <button type="button" id="clear-file">&times;</button>`;
+    document.getElementById('clear-file').onclick = (e) => {
+      e.stopPropagation();
+      fileInput.value = '';
+      fileChip.style.display = 'none';
+      clearPreview();
+    };
+    previewFile(file);
+  }
+
+  function previewFile(file) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (file.name.toLowerCase().endsWith('.csv')) renderCsvPreview(reader.result);
+      else renderJsonPreview(reader.result);
+    };
+    reader.readAsText(file);
+  }
+
+  rawJson.addEventListener('input', () => renderJsonPreview(rawJson.value));
+
+  function clearPreview() {
+    previewBody.innerHTML = '<div class="bu-preview-empty">Choose a file or paste JSON to see a quick preview before importing.</div>';
+    previewCount.textContent = 'No file selected';
+    submitBtn.textContent = 'Import Questions';
+  }
+
+  function parseCsv(text) {
+    const lines = text.replace(/\r\n/g, '\n').split('\n').filter((l) => l.trim().length);
+    if (!lines.length) return { headers: [], rows: [] };
+    const splitLine = (line) => {
+      const out = [];
+      let cur = '', inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const c = line[i];
+        if (c === '"') { inQuotes = !inQuotes; }
+        else if (c === ',' && !inQuotes) { out.push(cur); cur = ''; }
+        else { cur += c; }
+      }
+      out.push(cur);
+      return out.map((s) => s.trim());
+    };
+    const headers = splitLine(lines[0]);
+    const rows = lines.slice(1).map(splitLine);
+    return { headers, rows };
+  }
+
+  function renderCsvPreview(text) {
+    let parsed;
+    try { parsed = parseCsv(text); } catch (e) {
+      previewBody.innerHTML = `<div class="bu-preview-error">Could not read this CSV file: ${e.message}</div>`;
+      previewCount.textContent = 'Error';
+      return;
+    }
+    if (!parsed.headers.length) { clearPreview(); return; }
+    previewCount.textContent = `${parsed.rows.length} row${parsed.rows.length === 1 ? '' : 's'}`;
+    submitBtn.textContent = `Import ${parsed.rows.length} Question${parsed.rows.length === 1 ? '' : 's'}`;
+    renderTable(parsed.headers, parsed.rows.slice(0, 8));
+  }
+
+  function renderJsonPreview(text) {
+    if (!text || !text.trim()) { clearPreview(); return; }
+    let data;
+    try { data = JSON.parse(text); } catch (e) {
+      previewBody.innerHTML = `<div class="bu-preview-error">Invalid JSON: ${e.message}</div>`;
+      previewCount.textContent = 'Error';
+      return;
+    }
+    if (data && !Array.isArray(data) && Array.isArray(data.questions)) data = data.questions;
+    if (!Array.isArray(data)) data = [data];
+    previewCount.textContent = `${data.length} question${data.length === 1 ? '' : 's'}`;
+    submitBtn.textContent = `Import ${data.length} Question${data.length === 1 ? '' : 's'}`;
+    const headers = [...new Set(data.slice(0, 8).flatMap((row) => Object.keys(row || {})))];
+    const rows = data.slice(0, 8).map((row) => headers.map((h) => {
+      const v = row ? row[h] : '';
+      return typeof v === 'object' ? JSON.stringify(v) : String(v ?? '');
+    }));
+    renderTable(headers, rows);
+  }
+
+  function renderTable(headers, rows) {
+    if (!rows.length) { previewBody.innerHTML = '<div class="bu-preview-empty">No rows found.</div>'; return; }
+    const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    let html = '<table class="bu-preview-table"><thead><tr>' + headers.map((h) => `<th>${esc(h)}</th>`).join('') + '</tr></thead><tbody>';
+    rows.forEach((r) => { html += '<tr>' + r.map((c) => `<td title="${esc(c)}">${esc(c)}</td>`).join('') + '</tr>'; });
+    html += '</tbody></table>';
+    previewBody.innerHTML = html;
+  }
+})();
+</script>
+{% endblock %}

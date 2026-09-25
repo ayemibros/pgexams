@@ -1,0 +1,50 @@
+{% extends "layout/staff_shell.html" %}
+{% block page_title %}Faculties{% endblock %}
+{% block content %}
+<style>
+.faculty-icon{background:linear-gradient(135deg,#059669,#10b981)}
+</style>
+<div class="page-head">
+  <div>
+    <div class="page-head-title">Faculties</div>
+    <div class="page-head-sub">{{ faculties|length }} facult{{ faculties|length|pluralize("y,ies") }}</div>
+  </div>
+  <div class="page-head-actions">
+    <a href="{{ url('catalog:faculty_add') }}" class="btn btn-primary">+ New Faculty</a>
+  </div>
+</div>
+
+{% if faculties %}
+<div class="card-grid">
+  {% for faculty in faculties %}
+  <div class="entity-card">
+    <div class="entity-card-head">
+      <div class="icon-chip icon-chip-lg faculty-icon" style="color:#fff">{{ faculty.icon }}</div>
+      <div>
+        <div class="entity-card-title">{{ faculty.name }}</div>
+        <div class="entity-card-sub">{{ faculty.department_count }} department{{ faculty.department_count|pluralize }} · order {{ faculty.order }}</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+      <span class="pill {% if faculty.is_active %}pill-green{% else %}pill-gray{% endif %}">{% if faculty.is_active %}Active{% else %}Inactive{% endif %}</span>
+    </div>
+    <div class="entity-card-foot">
+      <a href="{{ url('catalog:faculty_edit', faculty.pk) }}" class="btn btn-outline btn-sm">Edit</a>
+      <form method="post" action="{{ url('catalog:faculty_delete', faculty.pk) }}" style="display:inline;margin-left:auto" onsubmit="return confirm('Delete this faculty? Its departments will be unassigned.');">
+        {{ csrf_input }}<button type="submit" class="btn btn-outline btn-sm" style="color:#e11d48">Delete</button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card">
+  <div class="empty-pro">
+    <div class="empty-pro-icon">🎓</div>
+    <div class="empty-pro-title">No faculties yet</div>
+    <div class="empty-pro-sub">Faculties group departments together — e.g. Faculty of Science, Faculty of Law — and power the postgraduate Subscribe page's Faculty → Department picker.</div>
+    <a href="{{ url('catalog:faculty_add') }}" class="btn btn-primary" style="margin-top:1rem">+ New Faculty</a>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

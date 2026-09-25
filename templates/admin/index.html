@@ -1,0 +1,17 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<h1>Site administration</h1>
+{% for g in groups %}
+<div class="card">
+  <h2>{{ g.app }}</h2>
+  <table>
+    {% for m in g.models %}
+    <tr>
+      <td><a href="/admin/{{ m.key }}/"><strong>{{ m.name }}</strong></a> <span class="muted">({{ m.count }})</span></td>
+      <td style="text-align:right;white-space:nowrap"><a href="/admin/{{ m.key }}/add/">+ Add</a> &nbsp; <a href="/admin/{{ m.key }}/">✎ Change</a></td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endfor %}
+{% endblock %}

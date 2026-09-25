@@ -1,0 +1,57 @@
+{% extends "layout/staff_shell.html" %}
+{% block page_title %}Accounts{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="page-head-title">Accounts</div>
+    <div class="page-head-sub">{{ accounts|length }} account{{ accounts|length|pluralize }}</div>
+  </div>
+  <div class="page-head-actions">
+    <form method="get" style="display:flex;gap:.5rem">
+      <input type="text" name="q" class="form-input" placeholder="Search…" value="{{ filters.q }}">
+      <select name="role" class="form-select" onchange="this.form.submit()">
+        <option value="">All roles</option>
+        {% for val, label in role_choices %}<option value="{{ val }}" {% if filters.role == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+      <button type="submit" class="btn btn-outline btn-sm">Search</button>
+    </form>
+    <a href="{{ url('accounts:account_create', role='staff') }}" class="btn btn-primary">+ New Staff/Lecturer</a>
+    {% if request.user.is_super_admin %}<a href="{{ url('accounts:account_create', role='admin') }}" class="btn btn-outline">+ New Admin</a>{% endif %}
+  </div>
+</div>
+
+{% if accounts %}
+<div class="card">
+  <table class="table">
+    <thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Email</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+      {% for a in accounts %}
+      <tr>
+        <td style="font-weight:700">{{ a.get_full_name|default("—") }}</td>
+        <td>{{ a.username }}</td>
+        <td><span class="pill pill-gray">{{ a.get_role_display }}</span></td>
+        <td>{{ a.email|default("—") }}</td>
+        <td>{% if a.is_active %}<span class="pill pill-green">Active</span>{% else %}<span class="pill pill-red">Disabled</span>{% endif %}</td>
+        <td>
+          {% if a.pk != request.user.pk %}
+          <form method="post" action="{{ url('accounts:account_toggle_active', a.pk) }}" style="display:inline" onsubmit="return confirm('{% if a.is_active %}Disable{% else %}Re-enable{% endif %} this account?');">
+            {{ csrf_input }}
+            <button type="submit" class="btn btn-outline btn-sm" style="{% if a.is_active %}color:#e11d48{% endif %}">{% if a.is_active %}Disable{% else %}Enable{% endif %}</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card">
+  <div class="empty-pro">
+    <div class="empty-pro-icon">👥</div>
+    <div class="empty-pro-title">No accounts found</div>
+    <div class="empty-pro-sub">Create a Staff/Lecturer account to get started.</div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

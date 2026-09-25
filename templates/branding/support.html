@@ -1,0 +1,49 @@
+{% extends "layout/public_base.html" %}
+{% block title %}Support{% endblock %}
+{% block meta_desc %}Get help with your {{ site_settings.school_name }} account, subscription or payment. Call, WhatsApp or email our support team.{% endblock %}
+{% block content %}
+<main class="page">
+  <div class="wrap wrap-md">
+    <div class="page-head center">
+      <div class="kicker">Support</div>
+      <h1>How can we help?</h1>
+      <p>Reach us whichever way suits you. We can help with your account, subscription and payments.</p>
+    </div>
+
+    {% if site_settings.contact_phone or site_settings.whatsapp_url or site_settings.contact_email %}
+    <div class="support-grid">
+      {% if site_settings.contact_phone %}
+      <article class="support-card">
+        <div class="support-icon">{{ icon("phone", size=24) }}</div>
+        <div class="support-label">Phone</div>
+        <div class="support-value">{{ site_settings.contact_phone }}</div>
+        <a href="{{ site_settings.phone_href }}" class="btn btn-outline btn-block">Call now</a>
+      </article>
+      {% endif %}
+
+      {% if site_settings.whatsapp_url %}
+      <article class="support-card">
+        <div class="support-icon wa">{{ icon("message-circle", size=24) }}</div>
+        <div class="support-label">WhatsApp</div>
+        <div class="support-value">{{ site_settings.whatsapp_number }}</div>
+        <a href="{{ site_settings.whatsapp_url }}" class="btn btn-primary btn-block" target="_blank" rel="noopener">Chat on WhatsApp</a>
+      </article>
+      {% endif %}
+
+      {% if site_settings.contact_email %}
+      <article class="support-card">
+        <div class="support-icon">{{ icon("mail", size=24) }}</div>
+        <div class="support-label">Email</div>
+        <div class="support-value">{{ site_settings.contact_email }}</div>
+        <a href="mailto:{{ site_settings.contact_email }}" class="btn btn-outline btn-block">Send an email</a>
+      </article>
+      {% endif %}
+    </div>
+
+    <p class="support-tip">{{ icon("check-circle", size=16) }}<span>To help us reply faster, include your <b>username</b>. For payment issues, add your <b>payment reference</b> too.</span></p>
+    {% else %}
+    <div class="empty"><b>Support details coming soon</b>We're setting up our support channels. Please check back shortly.</div>
+    {% endif %}
+  </div>
+</main>
+{% endblock %}

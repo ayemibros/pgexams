@@ -1,0 +1,49 @@
+{% set exam = item.exam %}
+<div class="cbt-card">
+  <div class="cbt-card-top-{{ exam.mode }}"></div>
+  <div class="cbt-card-body">
+    <div class="ex-year-row">
+      {% if exam.year %}<span class="ex-year">{{ exam.year }}</span>{% endif %}
+      <span class="ex-kind">{% if exam.counts_as_ept %}{{ site_settings.shared_exam_short_name|default("Shared") }}{% elif exam.bundle %}Department exam{% else %}Exam{% endif %}</span>
+    </div>
+    <div class="cbt-card-title">{{ exam.title }}</div>
+    <div class="chip-row">
+      {% if exam.time_limit_minutes %}<span class="chip">{{ exam.time_limit_minutes }} min</span>{% else %}<span class="chip">Untimed</span>{% endif %}
+      <span class="chip">Pass {{ exam.pass_score }}%</span>
+      {% if exam.negative_marking %}<span class="chip chip-neg">−ve Marks</span>{% endif %}
+    </div>
+    {% if exam.available_from or exam.available_until %}
+    <div class="window-pill">
+      {% if exam.available_from %}Opens {{ exam.available_from|date("d M, H:i") }}{% endif %}
+      {% if exam.available_until %} · Closes {{ exam.available_until|date("d M, H:i") }}{% endif %}
+    </div>
+    {% endif %}
+
+    {% if item.attempt_count %}
+    <div class="cbt-score-block">
+      <div class="cbt-score-header">
+        <span class="cbt-score-label">{{ item.attempt_count }} attempt{{ item.attempt_count|pluralize }} · last {{ item.last_attempt.score_pct|floatformat("-2") }}%</span>
+        <span class="cbt-score-pct" style="color:{% if item.best_attempt.passed %}#059669{% else %}#e11d48{% endif %}">Best {{ item.best_attempt.score_pct|floatformat("-2") }}%</span>
+      </div>
+      <div class="cbt-score-bar"><div class="cbt-score-fill" style="width:{{ item.best_attempt.score_pct|floatformat("-2") }}%;background:{% if item.best_attempt.passed %}#10b981{% elif item.best_attempt.score_pct >= 50 %}#f59e0b{% else %}#e11d48{% endif %}"></div></div>
+    </div>
+    {% else %}
+    <div class="ex-fresh">Not attempted yet</div>
+    {% endif %}
+  </div>
+
+  <div class="cbt-card-footer">
+    {% if item.in_progress %}
+      <a href="{{ url('examhub:exam_take', item.in_progress.pk) }}" class="cbt-btn cbt-btn-resume">Resume</a>
+      <span class="status-badge sb-progress"><span class="sb-pulse"></span>In Progress</span>
+    {% elif item.can_attempt %}
+      <a href="{{ url('examhub:exam_start', exam.pk) }}" class="cbt-btn cbt-btn-primary">{% if item.attempt_count %}Practise again{% else %}Start{% endif %}</a>
+      {% if item.attempt_count %}<a href="{{ url('examhub:student_results') }}?exam={{ exam.pk }}" class="cbt-btn cbt-btn-outline">History</a>{% endif %}
+    {% else %}
+      {% if item.attempt_count %}<a href="{{ url('examhub:student_results') }}?exam={{ exam.pk }}" class="cbt-btn cbt-btn-outline">History</a>{% endif %}
+      <span style="font-size:.75rem;color:#9ca3af;font-style:italic">{% if not item.available %}Not open right now{% else %}No attempts left{% endif %}</span>
+    {% endif %}
+    {% if item.attempts_left != none %}<span class="attempts-left">{{ item.attempts_left }} left</span>{% endif %}
+  </div>
+</div>
+

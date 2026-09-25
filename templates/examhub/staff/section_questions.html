@@ -1,0 +1,209 @@
+{% extends "layout/staff_shell.html" %}
+{% block page_title %}{% if is_only_section %}{{ exam.title }}{% else %}{{ section.title }}{% endif %}{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="/static/vendor/katex/katex.min.css">
+<script defer src="/static/vendor/katex/katex.min.js"></script>
+<script defer src="/static/vendor/katex/contrib/auto-render.min.js"></script>
+{% endblock %}
+{% block content %}
+<style>
+.qtype-section{display:none}
+.qtype-section.active{display:block}
+.choice-row{display:flex;align-items:center;gap:.6rem;margin-bottom:.5rem}
+.choice-row input[type=text]{flex:1}
+.tabs{display:flex;gap:.5rem;margin-bottom:1rem}
+.tab-btn{padding:.5rem 1rem;border-radius:9px;font-size:.8125rem;font-weight:700;border:1.5px solid #e5e7eb;background:#fff;cursor:pointer;color:#6b7280}
+.tab-btn.active{background:#111827;color:#fff;border-color:#111827}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+.mq-adv-link{font-size:.75rem;color:#9ca3af;text-decoration:none}
+.mq-adv-link:hover{color:#6b7280;text-decoration:underline}
+</style>
+
+<a href="{{ url('examhub:staff_exam_list') }}" style="font-size:.75rem;color:#9ca3af;text-decoration:none;display:inline-block;margin-bottom:.5rem">← All exams</a>
+<div class="page-head">
+  <div>
+    <div class="page-head-title">{% if is_only_section %}{{ exam.title }}{% else %}{{ section.title }}{% endif %}</div>
+    <div class="page-head-sub">
+      {{ existing_qs|length }} question{{ existing_qs|length|pluralize }} &bull; {{ total_pts|floatformat(0) }} marks
+      {% if is_only_section %} &bull; {% if exam.is_published %}<span class="pill pill-green">Published</span>{% else %}<span class="pill pill-gray">Draft</span>{% endif %}{% endif %}
+      {% if not is_only_section %} &bull; part of <a href="{{ url('examhub:exam_sections', exam.pk) }}" style="color:var(--primary);font-weight:700">{{ exam.title }}</a>{% endif %}
+    </div>
+  </div>
+  {% if is_only_section %}
+  <div class="page-head-actions">
+    <a href="{{ url('examhub:exam_edit', exam.pk) }}" class="btn btn-outline">Exam Settings</a>
+    {% if exam.is_published %}
+    <form method="post" style="display:inline">{{ csrf_input }}<input type="hidden" name="action" value="unpublish"><button type="submit" class="btn btn-outline">Unpublish</button></form>
+    {% else %}
+    <form method="post" style="display:inline">{{ csrf_input }}<input type="hidden" name="action" value="publish"><button type="submit" class="btn btn-primary">Publish Exam</button></form>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+
+{% if existing_qs|length == 0 %}<div class="msg msg-warning">This exam has no questions yet — add its first question below before publishing.</div>{% endif %}
+
+<div class="card" style="margin-bottom:1.25rem">
+  <table class="table">
+    <thead><tr><th>#</th><th>Question</th><th>Type</th><th>Points</th><th></th></tr></thead>
+    <tbody>
+      <form method="post" id="points-form">
+        {{ csrf_input }}
+        <input type="hidden" name="action" value="update_points">
+        {% for eq in existing_qs %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td>{{ eq.eff_stem|striptags|truncatechars(80) }}</td>
+          <td>{{ eq.eff_type }}</td>
+          <td><input type="number" step="0.5" name="points_{{ eq.pk }}" value="{{ eq.points }}" class="form-input" style="width:80px" form="points-form"></td>
+          <td><button type="button" class="btn btn-outline btn-sm" style="color:#e11d48" onclick="removeQuestion({{ eq.pk }})">Remove</button></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="empty">No questions yet — add the first one below.</td></tr>
+        {% endfor %}
+      </form>
+    </tbody>
+  </table>
+  {% if existing_qs %}<div style="padding:0 1rem 1rem"><button type="submit" form="points-form" class="btn btn-outline btn-sm">Save Points</button></div>{% endif %}
+</div>
+
+{% for eq in existing_qs %}
+<form method="post" style="display:none" id="remove-form-{{ eq.pk }}">{{ csrf_input }}<input type="hidden" name="action" value="remove_question"><input type="hidden" name="question_pk" value="{{ eq.pk }}"></form>
+{% endfor %}
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('inline')" id="tab-inline-btn">+ Add Question</button>
+  <button class="tab-btn" onclick="switchTab('bank')" id="tab-bank-btn">Reuse From a Bank</button>
+</div>
+
+<div class="tab-panel active" id="tab-inline">
+  <div class="card" style="padding:1.5rem">
+    <form method="post">
+      {{ csrf_input }}
+      <input type="hidden" name="action" value="add_inline">
+      <div class="form-row">
+        <label class="form-label">Question type</label>
+        <select name="question_type" id="qtype" class="form-select" onchange="showType(this.value)" required>
+          {% for val, label in type_choices %}<option value="{{ val }}">{{ label }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-row"><label class="form-label">Stem</label><textarea name="stem" class="form-textarea" required></textarea></div>
+      <div class="form-row"><label class="form-label">Points</label><input type="number" step="0.5" name="points" class="form-input" value="1" style="max-width:120px"></div>
+
+      <div class="qtype-section" data-types="mcq_single,mcq_multi" id="section-mcq">
+        <label class="form-label">Answer choices</label>
+        {% for label in ["A", "B", "C", "D", "E", "F"] %}
+        <div class="choice-row">
+          <input type="checkbox" name="choice_correct[]" value="{{ loop.index0 }}">
+          <input type="text" name="choice_text[]" class="form-input" placeholder="Choice {{ label }}">
+        </div>
+        {% endfor %}
+      </div>
+      <div class="qtype-section" data-types="true_false" id="section-tf">
+        <label class="form-label">Correct answer</label>
+        <select name="tf_answer" class="form-select"><option value="true">True</option><option value="false">False</option></select>
+      </div>
+      <div class="qtype-section" data-types="fill_blank" id="section-fill">
+        <label class="form-label">Accepted answers (JSON list of lists)</label>
+        <textarea name="blank_answers_json" class="form-textarea" placeholder='[["Abuja","abuja"]]'></textarea>
+      </div>
+      <div class="qtype-section" data-types="numeric" id="section-numeric">
+        <div style="display:flex;gap:.75rem">
+          <div class="form-row" style="flex:1"><label class="form-label">Answer</label><input type="number" step="any" name="numeric_answer" class="form-input"></div>
+          <div class="form-row" style="flex:1"><label class="form-label">Tolerance</label><input type="number" step="any" name="numeric_tolerance" class="form-input" value="0"></div>
+          <div class="form-row" style="flex:1"><label class="form-label">Unit</label><input type="text" name="numeric_unit" class="form-input"></div>
+        </div>
+      </div>
+      <div class="qtype-section" data-types="theory" id="section-theory">
+        <div class="form-row"><label class="form-label">Model answer</label><textarea name="model_answer" class="form-textarea"></textarea></div>
+        <div class="form-row"><label class="form-label">Keywords (comma-separated)</label><input type="text" name="keywords" class="form-input"></div>
+      </div>
+      <div class="qtype-section" data-types="match" id="section-match">
+        <div style="display:flex;gap:.75rem">
+          <div class="form-row" style="flex:1"><label class="form-label">Column A</label><textarea name="match_left" class="form-textarea"></textarea></div>
+          <div class="form-row" style="flex:1"><label class="form-label">Column B</label><textarea name="match_right" class="form-textarea"></textarea></div>
+        </div>
+        <div class="form-row"><label class="form-label">Correct pairs (JSON)</label><input type="text" name="correct_pairs_json" class="form-input" placeholder="[[0,0],[1,1]]"></div>
+      </div>
+      <div class="qtype-section" data-types="order" id="section-order">
+        <label class="form-label">Items in correct order (one per line)</label>
+        <textarea name="order_items" class="form-textarea"></textarea>
+      </div>
+      <div class="qtype-section" data-types="category" id="section-category">
+        <div class="form-row"><label class="form-label">Categories (one per line)</label><textarea name="categories" class="form-textarea"></textarea></div>
+        <div class="form-row"><label class="form-label">Items (JSON)</label><textarea name="category_items_json" class="form-textarea" placeholder='[["Lion",1],["Grass",0]]'></textarea></div>
+      </div>
+
+      <div class="form-row"><label class="form-label">Explanation</label><textarea name="explanation" class="form-textarea"></textarea></div>
+      <button type="submit" class="btn btn-primary">Add Question</button>
+    </form>
+  </div>
+</div>
+
+<div class="tab-panel" id="tab-bank">
+  <div class="card" style="padding:1.25rem">
+    <p style="font-size:.8125rem;color:#6b7280;margin:0 0 1rem">Pull in a question you've already written for another exam, instead of retyping it.</p>
+    <form method="get" style="display:flex;gap:.5rem;margin-bottom:1rem">
+      <select name="bank" class="form-select" onchange="this.form.submit()">
+        <option value="">Choose a bank…</option>
+        {% for b in banks %}<option value="{{ b.pk }}" {% if selected_bank_pk == b.pk|stringformat("s") %}selected{% endif %}>{{ b.name }}</option>{% endfor %}
+      </select>
+    </form>
+    {% if bank_questions %}
+    <form method="post">
+      {{ csrf_input }}
+      <input type="hidden" name="action" value="add_from_bank">
+      <table class="table">
+        <thead><tr><th></th><th>Question</th><th>Type</th><th>Difficulty</th></tr></thead>
+        <tbody>
+          {% for bq in bank_questions %}
+          <tr>
+            <td><input type="checkbox" name="bq_pks[]" value="{{ bq.pk }}"></td>
+            <td>{{ bq.stem|striptags|truncatechars(90) }}</td>
+            <td>{{ bq.get_question_type_display }}</td>
+            <td>{{ bq.get_difficulty_display }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <button type="submit" class="btn btn-primary">Add Selected</button>
+    </form>
+    {% elif selected_bank_pk %}
+    <div class="empty">This bank has no questions yet.</div>
+    {% endif %}
+  </div>
+</div>
+
+{% if not is_only_section %}
+<p style="margin-top:1.5rem"><a href="{{ url('examhub:exam_sections', exam.pk) }}" class="mq-adv-link">← Back to {{ exam.title }}'s other sections</a></p>
+{% else %}
+<p style="margin-top:1.5rem"><a href="{{ url('examhub:exam_sections', exam.pk) }}" class="mq-adv-link">This paper has more than one part? Manage sections (advanced) →</a></p>
+{% endif %}
+
+{% endblock %}
+{% block extra_js %}
+<script src="/static/js/rich_editor.js"></script>
+<script>
+function switchTab(name) {
+  document.getElementById('tab-bank').classList.toggle('active', name==='bank');
+  document.getElementById('tab-inline').classList.toggle('active', name==='inline');
+  document.getElementById('tab-bank-btn').classList.toggle('active', name==='bank');
+  document.getElementById('tab-inline-btn').classList.toggle('active', name==='inline');
+}
+function showType(t) {
+  document.querySelectorAll('.qtype-section').forEach(el => el.classList.toggle('active', el.dataset.types.split(',').includes(t)));
+}
+showType(document.getElementById('qtype').value);
+function removeQuestion(pk) { document.getElementById('remove-form-' + pk).submit(); }
+
+CBTRichEditor.config({
+  uploadUrl: '{{ url("examhub:upload_asset") }}',
+  csrfToken: '{{ csrf_token }}',
+});
+CBTRichEditor.attachField(document.querySelector('#tab-inline textarea[name="stem"]'));
+CBTRichEditor.attachField(document.querySelector('#tab-inline textarea[name="explanation"]'), { diagrams: false });
+CBTRichEditor.attachField(document.querySelector('#tab-inline textarea[name="model_answer"]'), { diagrams: false });
+document.querySelectorAll('#tab-inline input[name="choice_text[]"]').forEach(inp => CBTRichEditor.attachCompactField(inp));
+</script>
+{% endblock %}

@@ -1,0 +1,141 @@
+{% extends "layout/staff_shell.html" %}
+{% block page_title %}{% if exam %}Edit Exam{% else %}New Exam{% endif %}{% endblock %}
+{% block content %}
+<style>
+.kind-row{display:flex;gap:.75rem;margin-bottom:1.25rem}
+.kind-opt{flex:1;display:flex;align-items:center;gap:.6rem;padding:.9rem 1rem;border:1.5px solid var(--border);border-radius:10px;cursor:pointer;transition:border-color .15s,background .15s}
+.kind-opt:has(input:checked){border-color:var(--accent);background:rgba(91,94,244,.06)}
+.kind-opt b{font-size:.85rem;color:#111827}
+.kind-opt span{display:block;font-size:.72rem;color:#9ca3af;margin-top:.1rem}
+details.adv{margin-top:.5rem;border-top:1px solid var(--border);padding-top:1rem}
+details.adv summary{cursor:pointer;font-size:.8125rem;font-weight:700;color:#6b7280;list-style:none}
+details.adv summary::-webkit-details-marker{display:none}
+details.adv summary::before{content:'▸ ';color:#9ca3af}
+details.adv[open] summary::before{content:'▾ '}
+details.adv .adv-body{padding-top:1rem}
+</style>
+
+<a href="{{ url('examhub:staff_exam_list') }}" style="font-size:.75rem;color:#9ca3af;text-decoration:none;display:inline-block;margin-bottom:.5rem">← All exams</a>
+<div class="card" style="max-width:620px;padding:1.75rem">
+  <div class="page-head-title" style="margin-bottom:.25rem">{% if exam %}Edit exam{% else %}New exam{% endif %}</div>
+  <div class="page-head-sub" style="margin-bottom:1.5rem">{% if exam %}Change the details below, then add or edit its questions.{% else %}A few details, then you'll add its questions straight away.{% endif %}</div>
+
+  <form method="post">
+    {{ csrf_input }}
+
+    {% if site_settings.shared_exam_short_name %}
+    <label class="form-label">What is this exam?</label>
+    <div class="kind-row">
+      <label class="kind-opt">
+        <input type="radio" name="kind" value="ept" id="kind-ept" {% if exam.is_ept or not exam and initial_kind != "department" %}checked{% endif %} onchange="toggleKind()">
+        <span><b>{{ site_settings.shared_exam_name|default(site_settings.shared_exam_short_name) }}</b><span>Shared by every department</span></span>
+      </label>
+      <label class="kind-opt">
+        <input type="radio" name="kind" value="department" id="kind-dept" {% if exam and not exam.is_ept or not exam and initial_kind == "department" %}checked{% endif %} onchange="toggleKind()">
+        <span><b>Department exam</b><span>Only that department's applicants</span></span>
+      </label>
+    </div>
+    {% else %}
+    <input type="hidden" name="kind" value="department">
+    {% endif %}
+
+    <div class="form-row" id="dept-row"{% if site_settings.shared_exam_short_name %} style="display:none"{% endif %}>
+      <label class="form-label">Department</label>
+      <select name="bundle" class="form-select">
+        <option value="">— Choose a department —</option>
+        {% for b in department_bundles %}
+        <option value="{{ b.pk }}" {% if exam.bundle_id == b.pk or not exam and initial_bundle == b.pk|stringformat("s") %}selected{% endif %}>{{ b.department.name|default(b.name) }}{% if b.department.faculty %} — {{ b.department.faculty.name }}{% endif %}</option>
+        {% endfor %}
+      </select>
+      {% if not department_bundles %}<div class="form-hint">No departments are set up yet — add one under Admin → Departments first.</div>{% endif %}
+    </div>
+
+    <div style="display:flex;gap:1rem">
+      <div class="form-row" style="flex:1">
+        <label class="form-label">Year</label>
+        <input type="number" name="year" id="id-year" class="form-input" value="{{ exam.year|default('') }}" placeholder="e.g. 2025">
+      </div>
+      <div class="form-row" style="flex:2">
+        <label class="form-label">Title</label>
+        <input type="text" name="title" id="id-title" class="form-input" value="{{ exam.title|default('') }}" required>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:1rem">
+      <div class="form-row" style="flex:1"><label class="form-label">Time limit (minutes)</label><input type="number" name="time_limit_minutes" class="form-input" value="{{ exam.time_limit_minutes|default('') }}" placeholder="e.g. 60"></div>
+      <div class="form-row" style="flex:1"><label class="form-label">Pass score (%)</label><input type="number" name="pass_score" class="form-input" value="{{ exam.pass_score|default('50') }}"></div>
+    </div>
+
+    <details class="adv">
+      <summary>Advanced settings</summary>
+      <div class="adv-body">
+        <div class="form-row"><label class="form-label">Instructions shown before the exam starts</label><textarea name="instructions" class="form-textarea">{{ exam.instructions|default('') }}</textarea></div>
+        <div style="display:flex;gap:1rem">
+          <div class="form-row" style="flex:1">
+            <label class="form-label">Mode</label>
+            <select name="mode" class="form-select">
+              {% for val, label in mode_choices %}<option value="{{ val }}" {% if exam.mode == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+            </select>
+            <div class="form-hint">Department{% if site_settings.shared_exam_short_name %} and {{ site_settings.shared_exam_short_name }}{% endif %} exams can always be retaken for practice, whichever mode you pick.</div>
+          </div>
+          <div class="form-row" style="flex:1"><label class="form-label">Max attempts (0 = unlimited)</label><input type="number" name="max_attempts" class="form-input" value="{{ exam.max_attempts|default('0') }}"></div>
+        </div>
+        <div class="form-row form-check"><input type="checkbox" name="negative_marking" id="negm" {% if exam.negative_marking %}checked{% endif %}><label for="negm">Enable negative marking</label></div>
+        <div class="form-row"><label class="form-label">Negative marking penalty (% of question points)</label><input type="number" name="negative_marking_pct" class="form-input" value="{{ exam.negative_marking_pct|default('25') }}"></div>
+        <div style="display:flex;gap:1.5rem;flex-wrap:wrap;margin:1rem 0">
+          <label class="form-check"><input type="checkbox" name="require_fullscreen" {% if exam.require_fullscreen %}checked{% endif %}> Require fullscreen</label>
+          <label class="form-check"><input type="checkbox" name="detect_tab_switch" {% if exam.detect_tab_switch|default(true) %}checked{% endif %}> Detect tab switching</label>
+          <label class="form-check"><input type="checkbox" name="allow_calculator" {% if exam.allow_calculator %}checked{% endif %}> Allow calculator</label>
+          <label class="form-check"><input type="checkbox" name="allow_scratch_pad" {% if exam.allow_scratch_pad|default(true) %}checked{% endif %}> Allow scratch pad</label>
+        </div>
+        <div class="form-row"><label class="form-label">Max tab switches before auto-submit</label><input type="number" name="max_tab_switches" class="form-input" value="{{ exam.max_tab_switches|default('3') }}"></div>
+        <div style="display:flex;gap:1rem">
+          <div class="form-row" style="flex:1"><label class="form-label">Available from</label><input type="datetime-local" name="available_from" class="form-input" value="{{ exam.available_from|date('Y-m-d\TH:i') }}"></div>
+          <div class="form-row" style="flex:1"><label class="form-label">Available until</label><input type="datetime-local" name="available_until" class="form-input" value="{{ exam.available_until|date('Y-m-d\TH:i') }}"></div>
+        </div>
+      </div>
+    </details>
+
+    <div style="margin-top:1.25rem">
+      <button type="submit" class="btn btn-primary">{% if exam %}Save{% else %}Save &amp; Add Questions{% endif %}</button>
+      <a href="{{ url('examhub:staff_exam_list') }}" class="btn btn-outline">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+var SHARED_EXAM_SHORT = "{{ site_settings.shared_exam_short_name|escapejs }}";
+var SHARED_EXAM_NAME = "{{ site_settings.shared_exam_name|escapejs }}";
+
+function toggleKind(){
+  var deptOnly = document.getElementById('dept-row');
+  var eptRadio = document.getElementById('kind-ept');
+  deptOnly.style.display = (!eptRadio || document.getElementById('kind-dept').checked) ? 'block' : 'none';
+}
+toggleKind();
+
+// Quality-of-life only: suggest a title from department + year until the
+// staff member types their own. Never overwrites something already typed.
+(function(){
+  var titleEl = document.getElementById('id-title');
+  if (titleEl.value) return;
+  var yearEl = document.getElementById('id-year');
+  var deptSelect = document.querySelector('select[name="bundle"]');
+  var eptRadio = document.getElementById('kind-ept');
+  function suggest(){
+    if (titleEl.dataset.touched) return;
+    var year = yearEl.value.trim();
+    var base = (eptRadio && eptRadio.checked)
+      ? (SHARED_EXAM_SHORT && SHARED_EXAM_NAME ? SHARED_EXAM_SHORT + ' — ' + SHARED_EXAM_NAME : SHARED_EXAM_NAME || SHARED_EXAM_SHORT)
+      : (deptSelect && deptSelect.selectedOptions[0] && deptSelect.value ? deptSelect.selectedOptions[0].text.split(' — ')[0] + ' — Department Exam' : '');
+    titleEl.value = base && year ? base + ' ' + year : base;
+  }
+  titleEl.addEventListener('input', function(){ titleEl.dataset.touched = '1'; });
+  yearEl.addEventListener('input', suggest);
+  if (deptSelect) deptSelect.addEventListener('change', suggest);
+  if (eptRadio) eptRadio.addEventListener('change', suggest);
+  document.getElementById('kind-dept').addEventListener('change', suggest);
+})();
+</script>
+{% endblock %}

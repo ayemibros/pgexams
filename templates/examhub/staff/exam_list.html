@@ -1,0 +1,101 @@
+{% extends "layout/staff_shell.html" %}
+{% block page_title %}Exams{% endblock %}
+{% block content %}
+<style>
+.avg-cell{display:flex;align-items:center;gap:.5rem;min-width:90px}
+.avg-cell .mini-bar{width:60px}
+.row-actions{display:flex;gap:.3rem;flex-wrap:nowrap;justify-content:flex-end}
+.ex-jump{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:1.5rem}
+.ex-jump a{font-size:.75rem;font-weight:700;color:#6b7280;background:#fff;border:1px solid var(--border);border-radius:99px;padding:.3rem .8rem;text-decoration:none}
+.ex-jump a:hover{border-color:var(--accent);color:var(--accent)}
+.ex-section{margin-bottom:2rem}
+.ex-sec-head{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:.75rem}
+.ex-sec-head h2{font-size:1rem;font-weight:900;color:#111827;letter-spacing:-.015em;margin:0}
+.ex-sec-head p{font-size:.75rem;color:#9ca3af;margin:.15rem 0 0}
+.ex-sec-empty{padding:1.25rem;text-align:center;color:#9ca3af;font-size:.8125rem;border:1.5px dashed var(--border);border-radius:12px;background:#fff}
+</style>
+
+<div class="page-head">
+  <div>
+    <div class="page-head-title">Exams</div>
+    <div class="page-head-sub">{{ exam_total }} exam{{ exam_total|pluralize }}, grouped by department</div>
+  </div>
+  <div class="page-head-actions">
+    <form method="get">
+      <select name="year" class="form-select" onchange="this.form.submit()">
+        <option value="">All years</option>
+        {% for y in years %}<option value="{{ y }}" {% if filters.year == y|stringformat("s") %}selected{% endif %}>{{ y }}</option>{% endfor %}
+      </select>
+    </form>
+    <a href="{{ url('examhub:exam_add') }}" class="btn btn-primary">+ New Exam</a>
+  </div>
+</div>
+
+{% if department_sections|length > 3 %}
+<div class="ex-jump">
+  {% if site_settings.shared_exam_short_name %}<a href="#sec-ept">{{ site_settings.shared_exam_short_name }}</a>{% endif %}
+  {% for section in department_sections %}<a href="#sec-{{ section.bundle.pk }}">{{ section.bundle.department.name|default(section.bundle.name) }}</a>{% endfor %}
+  {% if other_items %}<a href="#sec-other">Other</a>{% endif %}
+</div>
+{% endif %}
+
+{% if site_settings.shared_exam_short_name %}
+<section class="ex-section" id="sec-ept">
+  <div class="ex-sec-head">
+    <div>
+      <h2>{{ site_settings.shared_exam_name|default(site_settings.shared_exam_short_name) }}</h2>
+      <p>Shared by every department's applicants</p>
+    </div>
+    <a href="{{ url('examhub:exam_add') }}?kind=ept" class="btn btn-outline btn-sm">+ Add {{ site_settings.shared_exam_short_name }} Exam</a>
+  </div>
+  {% if ept_items %}
+  <div class="card">
+    <table class="table">
+      <thead><tr><th>Exam</th><th>Year</th><th>Questions</th><th>Attempts</th><th>Avg Score</th><th>Status</th><th></th></tr></thead>
+      <tbody>{% for exam in ept_items %}{% include "examhub/staff/_exam_row.html" %}{% endfor %}</tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="ex-sec-empty">No {{ site_settings.shared_exam_short_name }} papers yet.</div>
+  {% endif %}
+</section>
+{% endif %}
+
+{% for section in department_sections %}
+<section class="ex-section" id="sec-{{ section.bundle.pk }}">
+  <div class="ex-sec-head">
+    <div>
+      <h2>{{ section.bundle.department.name|default(section.bundle.name) }}</h2>
+      <p>{{ section.bundle.name }}{% if section.bundle.department.faculty %} &bull; {{ section.bundle.department.faculty.name }}{% endif %}</p>
+    </div>
+    <a href="{{ url('examhub:exam_add') }}?kind=department&bundle={{ section.bundle.pk }}" class="btn btn-outline btn-sm">+ Add Exam</a>
+  </div>
+  {% if section.items %}
+  <div class="card">
+    <table class="table">
+      <thead><tr><th>Exam</th><th>Year</th><th>Questions</th><th>Attempts</th><th>Avg Score</th><th>Status</th><th></th></tr></thead>
+      <tbody>{% for exam in section.items %}{% include "examhub/staff/_exam_row.html" %}{% endfor %}</tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="ex-sec-empty">No exams for this department yet.</div>
+  {% endif %}
+</section>
+{% endfor %}
+
+{% if not department_sections %}
+<div class="ex-sec-empty" style="margin-bottom:2rem">No departments are set up yet — add one under <a href="{{ url('catalog:department_list') }}" style="color:var(--primary);font-weight:700">Admin → Departments</a>, then come back here to create its first exam.</div>
+{% endif %}
+
+{% if other_items %}
+<section class="ex-section" id="sec-other">
+  <div class="ex-sec-head"><div><h2>Other exams</h2><p>Not tied to a department — legacy subject/programme exams</p></div></div>
+  <div class="card">
+    <table class="table">
+      <thead><tr><th>Exam</th><th>Year</th><th>Questions</th><th>Attempts</th><th>Avg Score</th><th>Status</th><th></th></tr></thead>
+      <tbody>{% for exam in other_items %}{% include "examhub/staff/_exam_row.html" %}{% endfor %}</tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

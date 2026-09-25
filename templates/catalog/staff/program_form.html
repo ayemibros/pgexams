@@ -1,0 +1,58 @@
+{% extends "layout/staff_shell.html" %}
+{% block page_title %}{% if program %}Edit Program{% else %}New Program{% endif %}{% endblock %}
+{% block content %}
+<div class="card" style="max-width:640px;padding:1.5rem">
+  <form method="post">
+    {{ csrf_input }}
+    <div class="form-row">
+      <label class="form-label">Program name</label>
+      <input type="text" name="name" class="form-input" value="{{ program.name|default('') }}" required>
+    </div>
+    <div class="form-row">
+      <label class="form-label">Department</label>
+      <select name="department" class="form-select">
+        <option value="">— None —</option>
+        {% for d in departments %}<option value="{{ d.pk }}" {% if program.department_id == d.pk %}selected{% endif %}>{{ d.icon }} {{ d.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="form-row">
+      <label class="form-label">Level</label>
+      <select name="level" class="form-select">
+        {% for value, label in level_choices %}<option value="{{ value }}" {% if program.level == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="form-row">
+      <label class="form-label">Icon (emoji)</label>
+      <input type="text" name="icon" class="form-input" value="{{ program.icon|default('🎯') }}" maxlength="10">
+    </div>
+    <div class="form-row">
+      <label class="form-label">Description</label>
+      <textarea name="description" class="form-textarea">{{ program.description|default('') }}</textarea>
+    </div>
+    <div class="form-row">
+      <label class="form-label">Subjects</label>
+      <div class="checkbox-grid">
+        {% for subject in subjects %}
+        <label class="checkbox-chip">
+          <input type="checkbox" name="subjects[]" value="{{ subject.pk }}" {% if subject.pk in selected_subject_ids %}checked{% endif %}>
+          {{ subject.icon }} {{ subject.name }}
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="form-row">
+      <label class="form-label">Display order</label>
+      <input type="number" name="order" class="form-input" value="{{ program.order|default(0) }}">
+      <div class="form-hint">Lower numbers appear first within their department on the public homepage.</div>
+    </div>
+    <div class="form-row">
+      <label class="form-check">
+        <input type="checkbox" name="is_active" {% if not program or program.is_active %}checked{% endif %}>
+        Active (visible on the public homepage)
+      </label>
+    </div>
+    <button type="submit" class="btn btn-primary">Save Program</button>
+    <a href="{{ url('catalog:program_list') }}" class="btn btn-outline">Cancel</a>
+  </form>
+</div>
+{% endblock %}

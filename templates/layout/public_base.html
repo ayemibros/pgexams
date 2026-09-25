@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{% block title %}{% if site_settings.target_institution_name %}{{ site_settings.target_institution_name }} {% endif %}Postgraduate Exam Practice{% endblock %} · {{ site_settings.school_name }}</title>
+<meta name="description" content="{% block meta_desc %}Timed, computer-based practice{% if site_settings.target_institution_name %} for {{ site_settings.target_institution_name }} postgraduate entrance exams{% endif %}. Independent platform powered by Telifort Ltd.{% endblock %}">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/public.css">
+{% block extra_head %}{% endblock %}
+</head>
+<body>
+
+{% set page = request.resolver_match.url_name %}
+<header class="nav">
+  <div class="wrap nav-row">
+    <a href="{{ url('branding:home') }}" class="brand">
+      {% if site_settings.effective_logo_url %}
+        <img src="{{ site_settings.effective_logo_url }}" class="brand-mark" alt="">
+      {% else %}
+        <span class="brand-badge">{{ icon("academic-cap", size=20) }}</span>
+      {% endif %}
+      <span class="brand-text">
+        <span class="brand-name">{{ site_settings.school_name }}</span>
+        <span class="brand-by">Powered by Telifort Ltd</span>
+      </span>
+    </a>
+    <nav class="nav-links" aria-label="Main">
+      <a href="{{ url('branding:home') }}" {% if page == 'home' %}aria-current="page"{% endif %}>Home</a>
+      <a href="{{ url('branding:how_it_works') }}" {% if page == 'how_it_works' %}aria-current="page"{% endif %}>How it works</a>
+      <a href="{{ url('branding:support') }}" {% if page == 'support' %}aria-current="page"{% endif %}>Support</a>
+    </nav>
+    <div class="nav-actions">
+      {% block nav_actions %}
+        {% if request.user.is_authenticated %}
+          <a href="{{ url('accounts:post_login_redirect') }}" class="btn btn-primary">Dashboard</a>
+        {% else %}
+          <a href="{{ url('accounts:login') }}" class="btn btn-quiet">Log in</a>
+          <a href="{{ url('billing:plans_browse') }}" class="btn btn-primary">Subscribe Now!</a>
+        {% endif %}
+      {% endblock %}
+    </div>
+  </div>
+</header>
+
+
+{% block messages %}
+{% if messages %}
+<div class="wrap msgs" role="status">
+  {% for m in messages %}<div class="flash flash-{{ m.tags }}">{{ m }}</div>{% endfor %}
+</div>
+{% endif %}
+{% endblock %}
+
+{% block content %}{% endblock %}
+
+<footer class="foot">
+  <div class="wrap">
+    <div class="foot-row">
+      <span>© {{ now("Y") }} Telifort Ltd. All rights reserved.</span>
+      <nav aria-label="Footer">
+        <a href="{{ url('branding:how_it_works') }}">How it works</a>
+        <a href="{{ url('billing:plans_browse') }}">Subscribe</a>
+        <a href="{{ url('branding:support') }}">Support</a>
+        {% if site_settings.contact_email %}<a href="mailto:{{ site_settings.contact_email }}">{{ site_settings.contact_email }}</a>{% endif %}
+        {% if site_settings.contact_phone %}<a href="tel:{{ site_settings.contact_phone }}">{{ site_settings.contact_phone }}</a>{% endif %}
+      </nav>
+    </div>
+    <p class="foot-legal"><strong>Independent service.</strong> {{ site_settings.school_name }} is an exam-preparation platform owned and operated by Telifort Ltd.{% if site_settings.target_institution_name %} It is not affiliated with, endorsed by, or operated by {{ site_settings.target_institution_name }}. {{ site_settings.target_institution_name }}'s name is used only to describe the exams our practice content helps you prepare for.{% endif %} Using this service does not guarantee admission.</p>
+  </div>
+</footer>
+
+{% block scripts %}{% endblock %}
+</body>
+</html>

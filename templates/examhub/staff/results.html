@@ -1,0 +1,33 @@
+{% extends "layout/staff_shell.html" %}
+{% block page_title %}Results — {{ exam.title }}{% endblock %}
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:.75rem">
+  <div style="font-size:.8125rem;color:#6b7280">{{ total_done }} completed &bull; {{ pass_count }} passed &bull; avg {{ avg_score|floatformat(1) }}%</div>
+  <a href="?export=csv" class="btn btn-outline">⬇ Export CSV</a>
+</div>
+<div class="card">
+  <table class="table">
+    <thead><tr><th>Student</th><th>Reg No</th><th>Score</th><th>Status</th><th>Started</th><th>Duration</th><th></th></tr></thead>
+    <tbody>
+      {% for a in attempts %}
+      <tr>
+        <td>{{ a.student.get_full_name|default(a.student.username) }}</td>
+        <td>{{ a.student.registration_number }}</td>
+        <td>{{ a.score_pct|floatformat("-2") }}%</td>
+        <td>
+          {% if a.status == 'in_progress' %}<span class="pill pill-amber">In Progress</span>
+          {% elif a.passed %}<span class="pill pill-green">Passed</span>
+          {% else %}<span class="pill pill-red">Failed</span>{% endif %}
+          {% if a.has_ungraded_theory %}<span class="pill pill-gray">Ungraded Theory</span>{% endif %}
+        </td>
+        <td>{{ a.started_at|date("d M, H:i") }}</td>
+        <td>{% if a.time_taken_seconds %}{{ a.time_taken_seconds|floatformat(0) }}s{% else %}—{% endif %}</td>
+        <td>{% if a.has_ungraded_theory %}<a href="{{ url('examhub:grade_theory', a.pk) }}" class="btn btn-outline btn-sm">Grade</a>{% endif %}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7" class="empty">No attempts yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

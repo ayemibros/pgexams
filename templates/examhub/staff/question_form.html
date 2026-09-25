@@ -1,0 +1,173 @@
+{% extends "layout/staff_shell.html" %}
+{% block page_title %}{% if q %}Edit Question{% else %}Add Question{% endif %}{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="/static/vendor/katex/katex.min.css">
+<script defer src="/static/vendor/katex/katex.min.js"></script>
+<script defer src="/static/vendor/katex/contrib/auto-render.min.js"></script>
+{% endblock %}
+{% block content %}
+<style>
+.qtype-section{display:none;padding-top:.25rem}
+.qtype-section.active{display:block}
+.choice-row{display:flex;align-items:center;gap:.6rem;margin-bottom:.5rem}
+.choice-row input[type=text]{flex:1}
+.form-card{max-width:760px;padding:1.75rem}
+.form-section-lbl{font-size:.7rem;font-weight:800;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;margin:1.5rem 0 .7rem;padding-top:1.2rem;border-top:1px solid #f1f2f4}
+.form-section-lbl:first-of-type{margin-top:0;padding-top:0;border-top:none}
+.type-picker{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.55rem}
+.type-card{position:relative;display:flex;align-items:center;gap:.5rem;padding:.65rem .75rem;border:1.5px solid var(--border);border-radius:10px;cursor:pointer;font-size:.75rem;font-weight:700;color:#374151;background:#fff;transition:all .13s}
+.type-card:hover{border-color:var(--accent)}
+.type-card input{position:absolute;opacity:0;pointer-events:none}
+.type-card .ti{font-size:1rem}
+.type-card input:checked ~ .tc-label{color:var(--accent)}
+.type-card:has(input:checked){border-color:var(--accent);background:rgba(91,94,244,.06);box-shadow:0 0 0 3px rgba(91,94,244,.1)}
+</style>
+<a href="{{ url('examhub:bank_questions', bank.pk) }}" style="font-size:.75rem;color:#9ca3af;text-decoration:none;display:inline-block;margin-bottom:.5rem">← {{ bank.name }}</a>
+<div class="page-head">
+  <div>
+    <div class="page-head-title">{% if q %}Edit Question{% else %}Add Question{% endif %}</div>
+    <div class="page-head-sub">{{ bank.name }}</div>
+  </div>
+</div>
+<div class="card form-card">
+  <form method="post" id="qform">
+    {{ csrf_input }}
+    <div class="form-row">
+      <label class="form-label">Question type</label>
+      <div class="type-picker" id="type-picker">
+        {% for val, label in type_choices %}
+        <label class="type-card">
+          <input type="radio" name="question_type" value="{{ val }}" {% if q.question_type == val or loop.first and not q %}checked{% endif %}>
+          <span class="ti">{{ val|type_icon }}</span><span class="tc-label">{{ label }}</span>
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="form-section-lbl">Question Content</div>
+    <div class="form-row">
+      <label class="form-label">Question / Stem</label>
+      <textarea name="stem" class="form-textarea" required>{{ q.stem|default('') }}</textarea>
+    </div>
+    <div class="form-row">
+      <label class="form-label">Main diagram / image URL <span style="font-weight:400;color:#9ca3af">(optional — shown after the question text; for inline images use the 🖼 button above)</span></label>
+      <input type="url" name="stem_image_url" class="form-input" value="{{ q.stem_image_url|default('') }}">
+    </div>
+
+    <div class="form-section-lbl">Answer Configuration</div>
+    <!-- MCQ single/multi -->
+    <div class="qtype-section" data-types="mcq_single,mcq_multi" id="section-mcq">
+      <label class="form-label">Answer choices (mark correct one(s))</label>
+      {% for slot in mcq_choice_slots %}
+      <div class="choice-row">
+        <input type="checkbox" name="choice_correct[]" value="{{ loop.index0 }}" {% if slot.is_correct %}checked{% endif %}>
+        <input type="text" name="choice_text[]" class="form-input" placeholder="Choice {{ slot.label }}" value="{{ slot.text }}">
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- True/False -->
+    <div class="qtype-section" data-types="true_false" id="section-tf">
+      <label class="form-label">Correct answer</label>
+      <select name="tf_answer" class="form-select">
+        <option value="true" {% if q.tf_answer %}selected{% endif %}>True</option>
+        <option value="false" {% if q.tf_answer == false %}selected{% endif %}>False</option>
+      </select>
+    </div>
+
+    <!-- Fill blank -->
+    <div class="qtype-section" data-types="fill_blank" id="section-fill">
+      <label class="form-label">Accepted answers (JSON: list of lists — one list of accepted words per blank)</label>
+      <textarea name="blank_answers_json" class="form-textarea" placeholder='[["Abuja","abuja"]]'>{{ q.blank_answers|jsonify }}</textarea>
+    </div>
+
+    <!-- Numeric -->
+    <div class="qtype-section" data-types="numeric" id="section-numeric">
+      <div style="display:flex;gap:.75rem">
+        <div class="form-row" style="flex:1"><label class="form-label">Correct value</label><input type="number" step="any" name="numeric_answer" class="form-input" value="{{ q.numeric_answer|default('') }}"></div>
+        <div class="form-row" style="flex:1"><label class="form-label">Tolerance (±)</label><input type="number" step="any" name="numeric_tolerance" class="form-input" value="{{ q.numeric_tolerance|default('0') }}"></div>
+        <div class="form-row" style="flex:1"><label class="form-label">Unit</label><input type="text" name="numeric_unit" class="form-input" value="{{ q.numeric_unit|default('') }}"></div>
+      </div>
+    </div>
+
+    <!-- Theory -->
+    <div class="qtype-section" data-types="theory" id="section-theory">
+      <div class="form-row"><label class="form-label">Model answer (shown after grading)</label><textarea name="model_answer" class="form-textarea">{{ q.model_answer|default('') }}</textarea></div>
+      <div class="form-row"><label class="form-label">Auto-grade keywords (comma-separated)</label><input type="text" name="keywords" class="form-input" value="{{ q.keywords|join(', ') }}"></div>
+    </div>
+
+    <!-- Match -->
+    <div class="qtype-section" data-types="match" id="section-match">
+      <div style="display:flex;gap:.75rem">
+        <div class="form-row" style="flex:1"><label class="form-label">Column A (one per line)</label><textarea name="match_left" class="form-textarea">{{ q.match_left|join("
+") }}</textarea></div>
+        <div class="form-row" style="flex:1"><label class="form-label">Column B (one per line)</label><textarea name="match_right" class="form-textarea">{{ q.match_right|join("
+") }}</textarea></div>
+      </div>
+      <div class="form-row"><label class="form-label">Correct pairs (JSON: [[leftIdx,rightIdx], ...])</label><input type="text" name="correct_pairs_json" class="form-input" value="{{ q.correct_pairs|jsonify }}" placeholder="[[0,0],[1,1]]"></div>
+    </div>
+
+    <!-- Order -->
+    <div class="qtype-section" data-types="order" id="section-order">
+      <label class="form-label">Items in correct order (one per line)</label>
+      <textarea name="order_items" class="form-textarea">{{ q.order_items|join("
+") }}</textarea>
+    </div>
+
+    <!-- Category -->
+    <div class="qtype-section" data-types="category" id="section-category">
+      <div class="form-row"><label class="form-label">Categories (one per line)</label><textarea name="categories" class="form-textarea">{{ q.categories|join("
+") }}</textarea></div>
+      <div class="form-row"><label class="form-label">Items (JSON: [["item text", categoryIndex], ...])</label><textarea name="category_items_json" class="form-textarea" placeholder='[["Lion",1],["Grass",0]]'>{{ q.category_items|jsonify }}</textarea></div>
+    </div>
+
+    <div class="form-section-lbl">Classification</div>
+    <div style="display:flex;gap:1rem;margin-bottom:1rem">
+      <div class="form-row" style="flex:1;margin-bottom:0"><label class="form-label">Difficulty</label>
+        <select name="difficulty" class="form-select">{% for val, label in difficulty_choices %}<option value="{{ val }}" {% if q.difficulty == val %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+      </div>
+      <div class="form-row" style="flex:1;margin-bottom:0"><label class="form-label">Bloom level</label>
+        <select name="bloom_level" class="form-select"><option value="">—</option>{% for val, label in bloom_choices %}<option value="{{ val }}" {% if q.bloom_level == val %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+      </div>
+      <div class="form-row" style="flex:1;margin-bottom:0"><label class="form-label">Points</label><input type="number" step="0.5" name="default_points" class="form-input" value="{{ q.default_points|default('1') }}"></div>
+    </div>
+    <div style="display:flex;gap:1rem">
+      <div class="form-row" style="flex:1"><label class="form-label">Topic</label><input type="text" name="topic" class="form-input" value="{{ q.topic|default('') }}"></div>
+      <div class="form-row" style="flex:1"><label class="form-label">Subtopic</label><input type="text" name="subtopic" class="form-input" value="{{ q.subtopic|default('') }}"></div>
+      <div class="form-row" style="flex:1"><label class="form-label">Year asked</label><input type="number" name="year_asked" class="form-input" value="{{ q.year_asked|default('') }}"></div>
+    </div>
+
+    <div class="form-section-lbl">Feedback</div>
+    <div class="form-row"><label class="form-label">Explanation (shown after answering)</label><textarea name="explanation" class="form-textarea">{{ q.explanation|default('') }}</textarea></div>
+
+    <div style="display:flex;gap:.75rem;margin-top:1.5rem;padding-top:1.2rem;border-top:1px solid #f1f2f4">
+      <button type="submit" class="btn btn-primary">Save Question</button>
+      <button type="submit" name="add_another" value="1" class="btn btn-outline">Save &amp; Add Another</button>
+      <a href="{{ url('examhub:bank_questions', bank.pk) }}" class="btn btn-outline">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script src="/static/js/rich_editor.js"></script>
+<script>
+function showType(t) {
+  document.querySelectorAll('.qtype-section').forEach(el => {
+    el.classList.toggle('active', el.dataset.types.split(',').includes(t));
+  });
+}
+const typeRadios = document.querySelectorAll('#type-picker input[name="question_type"]');
+typeRadios.forEach(r => r.addEventListener('change', () => showType(r.value)));
+const checkedType = document.querySelector('#type-picker input[name="question_type"]:checked');
+if (checkedType) showType(checkedType.value);
+
+CBTRichEditor.config({
+  uploadUrl: '{{ url("examhub:upload_asset") }}',
+  csrfToken: '{{ csrf_token }}',
+});
+CBTRichEditor.attachField(document.querySelector('#qform textarea[name="stem"]'));
+CBTRichEditor.attachField(document.querySelector('#qform textarea[name="explanation"]'), { diagrams: false });
+const modelAnswerField = document.querySelector('#qform textarea[name="model_answer"]');
+if (modelAnswerField) CBTRichEditor.attachField(modelAnswerField, { diagrams: false });
+document.querySelectorAll('#qform input[name="choice_text[]"]').forEach(inp => CBTRichEditor.attachCompactField(inp));
+</script>
+{% endblock %}

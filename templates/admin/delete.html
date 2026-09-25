@@ -1,0 +1,14 @@
+{% extends "admin/base.html" %}
+{% block title %}Delete {{ title }}{% endblock %}
+{% block crumbs %}<a href="/admin/">Home</a> › {{ model.app }} › <a href="/admin/{{ model.key }}/">{{ model.name }}</a> › Delete{% endblock %}
+{% block content %}
+<h1>Are you sure?</h1>
+<div class="card" style="padding:1.25rem">
+  <p>Are you sure you want to delete “<strong>{{ title }}</strong>”? Related records that depend on it (for example an institution's classes, exams and question banks) will be deleted too.</p>
+  <form method="post">
+    {{ csrf_input }}
+    <button type="submit" class="btn btn-danger">Yes, I'm sure</button>
+    <a href="/admin/{{ model.key }}/{{ id }}/change/" class="btn">No, take me back</a>
+  </form>
+</div>
+{% endblock %}

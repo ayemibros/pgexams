@@ -1,0 +1,48 @@
+{% extends "layout/public_base.html" %}
+{% block title %}Create account{% endblock %}
+{% block nav_actions %}<a href="{{ url('accounts:login') }}{% if next %}?next={{ next|urlencode }}{% endif %}" class="btn btn-outline">Log in</a>{% endblock %}
+{# Errors are shown inside the card, next to the form, so the page-level banner is switched off. #}
+{% block messages %}{% endblock %}
+{% block content %}
+<main class="auth-main">
+  <div class="auth-card">
+    <h1>Create your account</h1>
+    <p class="auth-sub">Almost there. Create your account to finish subscribing.</p>
+    {% if messages %}
+    <div class="alert" role="alert">
+      {% if messages|length == 1 %}{% for m in messages %}{{ m }}{% endfor %}
+      {% else %}<ul class="alert-list">{% for m in messages %}<li>{{ m }}</li>{% endfor %}</ul>{% endif %}
+    </div>
+    {% endif %}
+    <form method="post">
+      {{ csrf_input }}
+      <input type="hidden" name="next" value="{{ next }}">
+      <div class="field">
+        <label for="id_full_name">Full name</label>
+        <input class="input" type="text" name="full_name" id="id_full_name" value="{{ form_data.full_name }}" autocomplete="name" autofocus required>
+      </div>
+      <div class="field">
+        <label for="id_email">Email</label>
+        <input class="input" type="email" name="email" id="id_email" value="{{ form_data.email }}" autocomplete="email" required>
+      </div>
+      <div class="field">
+        <label for="id_password">Password</label>
+        <div class="pw">
+          <input class="input" type="password" name="password" id="id_password" autocomplete="new-password" required>
+          <button type="button" aria-label="Show password">Show</button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="id_password_confirm">Confirm password</label>
+        <div class="pw">
+          <input class="input" type="password" name="password_confirm" id="id_password_confirm" autocomplete="new-password" required>
+          <button type="button" aria-label="Show password">Show</button>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary btn-lg btn-block">Create account</button>
+    </form>
+    <p class="auth-alt">Already have an account? <a href="{{ url('accounts:login') }}{% if next %}?next={{ next|urlencode }}{% endif %}">Log in</a></p>
+  </div>
+</main>
+{% endblock %}
+{% block scripts %}{% include "registration/_pw_toggle.html" %}{% endblock %}

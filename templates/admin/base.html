@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{% block title %}Site administration{% endblock %} · CBT System admin</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8f9fb;color:#111827;font-size:14px}
+a{color:#4338ca;text-decoration:none}
+a:hover{text-decoration:underline}
+header{background:#111827;color:#fff;padding:.85rem 1.5rem;display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap}
+header .brand{font-weight:900;font-size:1rem;color:#fff}
+header .who{font-size:.8rem;color:#cbd5e1}
+header .who a{color:#fbbf24}
+header form{display:inline}
+header button{background:none;border:none;color:#fbbf24;cursor:pointer;font:inherit;padding:0}
+.crumbs{background:#1f2937;color:#9ca3af;padding:.5rem 1.5rem;font-size:.8rem}
+.crumbs a{color:#e5e7eb}
+main{max-width:1200px;margin:0 auto;padding:1.5rem}
+h1{font-size:1.3rem;margin:0 0 1rem}
+.card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;margin-bottom:1.25rem}
+.card h2{margin:0;padding:.7rem 1rem;background:#4338ca;color:#fff;font-size:.8rem;text-transform:uppercase;letter-spacing:.05em}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;padding:.55rem .8rem;background:#f3f4f6;font-size:.72rem;text-transform:uppercase;color:#6b7280;letter-spacing:.04em}
+td{padding:.55rem .8rem;border-top:1px solid #f1f2f4;vertical-align:top}
+.btn{display:inline-block;padding:.45rem .9rem;border-radius:8px;border:1.5px solid #e5e7eb;background:#fff;color:#111827;font-weight:700;font-size:.8rem;cursor:pointer}
+.btn-primary{background:#4338ca;border-color:#4338ca;color:#fff}
+.btn-danger{background:#e11d48;border-color:#e11d48;color:#fff}
+.msg{padding:.65rem 1rem;border-radius:10px;margin-bottom:1rem;font-weight:600;font-size:.85rem}
+.msg-success{background:rgba(16,185,129,.1);color:#059669}
+.msg-error{background:rgba(225,29,72,.08);color:#e11d48}
+.msg-info,.msg-warning{background:rgba(245,158,11,.1);color:#92400e}
+input[type=text],input[type=number],input[type=password],input[type=datetime-local],input[type=date],select,textarea{width:100%;padding:.5rem .7rem;border:1.5px solid #e5e7eb;border-radius:8px;font:inherit}
+textarea{min-height:70px;font-family:ui-monospace,Consolas,monospace;font-size:.8rem}
+.muted{color:#9ca3af;font-size:.78rem}
+</style>
+</head>
+<body>
+<header>
+  <a class="brand" href="/admin/">⚙️ CBT System administration</a>
+  <div class="who">Welcome, <strong>{{ request.user.username }}</strong>. <a href="/">View site</a> / <a href="{{ url('accounts:change_password') }}">Change password</a> /
+    <form method="post" action="{{ url('accounts:logout') }}">{{ csrf_input }}<button type="submit">Log out</button></form></div>
+</header>
+<div class="crumbs">{% block crumbs %}<a href="/admin/">Home</a>{% endblock %}</div>
+<main>
+  {% for m in messages %}<div class="msg msg-{{ m.tags }}">{{ m }}</div>{% endfor %}
+  {% block content %}{% endblock %}
+</main>
+</body>
+</html>

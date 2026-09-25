@@ -1,0 +1,34 @@
+{
+  "name": "cbt-ui-node",
+  "version": "1.0.0",
+  "description": "CBT UI (Powered by Telifort Ltd.) — single-institution, subscription-based postgraduate exam-practice platform. Node.js + MySQL port of the Django CBT_UI project.",
+  "main": "server.js",
+  "private": true,
+  "type": "commonjs",
+  "engines": {
+    "node": ">=22.5"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "migrate": "node scripts/migrate.js",
+    "seed": "node scripts/seed_demo.js",
+    "create-test-accounts": "node scripts/create_test_accounts.js",
+    "createsuperuser": "node scripts/createsuperuser.js",
+    "reset-passwords": "node scripts/reset_passwords.js",
+    "import-django": "node scripts/import_from_django.js",
+    "copy-db": "node scripts/copy_db.js",
+    "smoke-test": "node scripts/smoke_test.js"
+  },
+  "dependencies": {
+    "busboy": "^1.6.0",
+    "csv-parse": "^7.0.3",
+    "csv-stringify": "^6.9.0",
+    "dotenv": "^18.0.4",
+    "express": "^5.2.1",
+    "express-mysql-session": "^3.0.3",
+    "express-session": "^1.19.0",
+    "mysql2": "^3.24.4",
+    "nunjucks": "^3.2.4",
+    "sanitize-html": "^2.17.7"
+  }
+}
