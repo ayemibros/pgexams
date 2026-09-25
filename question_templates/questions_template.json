@@ -2,6 +2,36 @@
   "questions": [
     {
       "type": "mcq_single",
+      "stem": "In the right-angled triangle shown, find the length $x$.",
+      "image": "triangle.png",
+      "choices": [
+        { "text": "5 cm", "is_correct": true },
+        { "text": "6 cm", "is_correct": false },
+        { "text": "7 cm", "is_correct": false },
+        { "text": "12 cm", "is_correct": false }
+      ],
+      "explanation": "Pythagoras: $x = \\sqrt{3^2 + 4^2} = \\sqrt{25} = 5$ cm. (In JSON every backslash is doubled: write \\\\sqrt for \\sqrt.)",
+      "difficulty": "medium",
+      "points": 2,
+      "topic": "Geometry",
+      "year": 2024
+    },
+    {
+      "type": "mcq_single",
+      "stem": "Simplify $\\frac{2}{3} + \\frac{1}{6}$",
+      "choices": [
+        { "text": "$\\frac{5}{6}$", "is_correct": true },
+        { "text": "$\\frac{3}{9}$", "is_correct": false },
+        { "text": "$\\frac{1}{2}$", "is_correct": false },
+        { "text": "$\\frac{3}{6}$", "is_correct": false }
+      ],
+      "explanation": "$\\frac{4}{6} + \\frac{1}{6} = \\frac{5}{6}$",
+      "difficulty": "easy",
+      "points": 1,
+      "topic": "Fractions"
+    },
+    {
+      "type": "mcq_single",
       "stem": "Choose the option that best completes the sentence: The committee ____ its report yesterday.",
       "choices": [
         { "text": "submit", "is_correct": false },

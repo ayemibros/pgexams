@@ -36,6 +36,8 @@ class QueryDict {
 class Files {
   constructor(files = []) { this.files = files; }
   get(name) { return this.files.find((f) => f.fieldname === name) || null; }
+  /** All files posted under one field name (an <input type="file" multiple>). */
+  getlist(name) { return this.files.filter((f) => f.fieldname === name); }
   cleanup() { for (const f of this.files) fs.promises.unlink(f.path).catch(() => {}); }
 }
 

@@ -9,7 +9,10 @@ const {
 const { route, render, redirect, messages, getOr404, jsonResponse, Http404 } = require('../web');
 const { parseLocalDateTime } = require('../templating');
 const { sanitizeRichHtml } = require('../services/sanitize');
-const { saveBytes } = require('../forms');
+const { saveBytes, saveUpload } = require('../forms');
+
+// Pictures accepted with bulk-uploaded questions (SVG is left out: it can carry script).
+const QUESTION_IMAGE_TYPES = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/jpg': 'jpg', 'image/gif': 'gif', 'image/webp': 'webp' };
 const { attachDepartments } = require('../services/billing');
 const X = require('../services/exams');
 const {
@@ -241,7 +244,22 @@ route(router, 'examhub:question_delete', async (req, res, { bank_pk, pk }) => {
 
 // ─────────────────────────────────────────── BULK UPLOAD ──
 
-async function createImportedQuestion(bank, user, row, i, createdRows, errorRows) {
+/**
+ * The question's picture from an `image` (or `stem_image_url`) column: a web
+ * address / site path is used as-is; a bare file name must match one of the
+ * image files uploaded together with the question file.
+ */
+function resolveImage(row, images) {
+  const raw = row.image ?? row.stem_image_url ?? '';
+  const ref = typeof raw === 'string' ? raw.trim() : '';
+  if (!ref) return '';
+  if (/^https?:\/\//i.test(ref) || ref.startsWith('/media/')) return ref;
+  const key = ref.replace(/^.*[\\/]/, '').toLowerCase();
+  if (images.has(key)) return images.get(key);
+  throw new Error(`Image "${ref}" was not uploaded — select it under "Images" together with your question file`);
+}
+
+async function createImportedQuestion(bank, user, row, i, createdRows, errorRows, images = new Map()) {
   try {
     if (!row || typeof row !== 'object' || Array.isArray(row)) throw new Error(`'${Array.isArray(row) ? 'list' : typeof row}' object has no attribute 'get'`);
     const get = (k) => row[k];
@@ -257,6 +275,7 @@ async function createImportedQuestion(bank, user, row, i, createdRows, errorRows
       topic: pyStrip(pyOr(get('topic'), '')), subtopic: pyStrip(pyOr(get('subtopic'), '')),
       default_points: round2(pyFloat(pyOr(get('points'), get('default_points'), 1))),
       year_asked: pyTruthyLite(get('year')) ? pyIntValue(get('year')) : null,
+      stem_image_url: resolveImage(row, images),
     };
     if (qtype === 'mcq_single' || qtype === 'mcq_multi') {
       if ('choices' in row && Array.isArray(row.choices)) {
@@ -313,18 +332,34 @@ async function importIntoBank(req, bank) {
   const errorRows = [];
   let parseError = null;
   let totalRows = 0;
+
+  // Images uploaded alongside the file, keyed by lower-case file name for the `image` column.
+  const images = new Map();
+  const rejected = [];
+  for (const img of req.FILES.getlist('images')) {
+    const ext = QUESTION_IMAGE_TYPES[img.mimetype];
+    if (!ext || img.size > MAX_UPLOAD_BYTES) { rejected.push(img.originalname); continue; }
+    const saved = await saveUpload(img, `question_images/${bank.id}/`);
+    images.set(img.originalname.replace(/^.*[\\/]/, '').toLowerCase(), `/media/${saved}`);
+  }
+  if (rejected.length) messages.warning(req, `Skipped ${rejected.length} image(s) that aren't PNG/JPG/GIF/WebP or are over 8 MB: ${rejected.join(', ')}`);
+
   try {
-    const fileText = upload ? (await fs.promises.readFile(upload.path)).toString('utf8') : null;
+    let fileText = upload ? (await fs.promises.readFile(upload.path)).toString('utf8') : null;
+    if (fileText && fileText.includes('�')) {
+      // Not valid UTF-8 — most likely Excel's plain "CSV (Comma delimited)", saved in Windows-1252.
+      fileText = new TextDecoder('windows-1252').decode(await fs.promises.readFile(upload.path));
+    }
     if (fmt === 'json' || (upload && upload.originalname.endsWith('.json'))) {
       let data = JSON.parse(upload ? fileText : rawText);
       if (data && typeof data === 'object' && !Array.isArray(data) && 'questions' in data) data = data.questions;
       if (!Array.isArray(data)) data = [data];
       totalRows = data.length;
-      for (let i = 0; i < data.length; i++) await createImportedQuestion(bank, req.user, data[i], i + 1, createdRows, errorRows);
+      for (let i = 0; i < data.length; i++) await createImportedQuestion(bank, req.user, data[i], i + 1, createdRows, errorRows, images);
     } else if (fmt === 'csv' || (upload && upload.originalname.endsWith('.csv'))) {
       const rows = readCsvDicts(upload ? fileText : rawText);
       totalRows = rows.length;
-      for (let i = 0; i < rows.length; i++) await createImportedQuestion(bank, req.user, rows[i], i + 1, createdRows, errorRows);
+      for (let i = 0; i < rows.length; i++) await createImportedQuestion(bank, req.user, rows[i], i + 1, createdRows, errorRows, images);
     } else {
       parseError = 'Unsupported format.';
     }
@@ -393,25 +428,17 @@ route(router, 'examhub:bulk_upload_start', async (req, res) => {
 
 route(router, 'examhub:bulk_upload_template', async (req, res, { fmt }) => {
   if (!isTeacher(req)) return redirect(res, '/');
-  if (fmt === 'csv') {
-    res.set('Content-Type', 'text/csv');
-    res.set('Content-Disposition', 'attachment; filename="questions_template.csv"');
-    return res.send(writeCsv([
-      ['type', 'difficulty', 'points', 'topic', 'stem', 'choice_a', 'choice_b', 'choice_c', 'choice_d', 'correct', 'explanation'],
-      ['mcq_single', 'medium', '1', 'Grammar', 'Which of these is a noun?', 'Dog', 'Run', 'Quickly', 'Before', 'A', 'Dog is a common noun.'],
-      ['true_false', 'easy', '1', 'Ecology', 'Plants produce their own food.', '', '', '', '', 'true', 'Photosynthesis.'],
-    ]));
-  }
-  res.set('Content-Type', 'application/json');
-  res.set('Content-Disposition', 'attachment; filename="questions_template.json"');
-  return res.send(JSON.stringify([
-    {
-      type: 'mcq_single', difficulty: 'medium', points: 1, topic: 'Algebra', stem: 'Simplify: 3(2x - 4)',
-      choices: [{ text: '6x - 12', is_correct: true }, { text: '6x - 4', is_correct: false }, { text: '6x + 12', is_correct: false }, { text: '3x - 12', is_correct: false }],
-      explanation: 'Distribute: 3×2x = 6x, 3×(-4) = -12',
-    },
-    { type: 'theory', difficulty: 'hard', points: 5, topic: 'Democracy', stem: 'Explain the concept of separation of powers.', keywords: 'separation,powers,legislative,executive,judicial' },
-  ], null, 2));
+  // Ready-made templates in question_templates/ (science examples with equations and an image).
+  const files = {
+    csv: ['questions_template.csv', 'text/csv; charset=utf-8'],
+    json: ['questions_template.json', 'application/json; charset=utf-8'],
+    image: ['triangle.png', 'image/png'],
+  };
+  if (!files[fmt]) throw new Http404();
+  const [name, type] = files[fmt];
+  res.set('Content-Type', type);
+  res.set('Content-Disposition', `attachment; filename="${name}"`);
+  return res.send(await fs.promises.readFile(require('path').join(__dirname, '..', '..', 'question_templates', name)));
 }, { login: true });
 
 // ─────────────────────────────────────────── EXAMS ──

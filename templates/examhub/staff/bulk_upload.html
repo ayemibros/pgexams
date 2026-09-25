@@ -52,8 +52,9 @@
   <div class="bu-title">{% if bank %}Bulk Upload — {{ bank.name }}{% else %}Bulk Upload Questions{% endif %}</div>
   <div class="bu-sub">Import many questions at once from a CSV or JSON file. All rows are sanitized and validated the same way as the manual question form.</div>
   <div class="bu-templates">
-    <a href="{{ url('examhub:bulk_upload_template', 'json') }}" class="bu-tpl-link">⬇ JSON template</a>
-    <a href="{{ url('examhub:bulk_upload_template', 'csv') }}" class="bu-tpl-link">⬇ CSV template</a>
+    <a href="{{ url('examhub:bulk_upload_template', 'csv') }}" class="bu-tpl-link">⬇ Excel / CSV template (recommended)</a>
+    <a href="{{ url('examhub:bulk_upload_template', 'image') }}" class="bu-tpl-link">⬇ Sample image (triangle.png)</a>
+    <a href="{{ url('examhub:bulk_upload_template', 'json') }}" class="bu-tpl-link">⬇ JSON template (all 9 types)</a>
   </div>
 </div>
 
@@ -154,15 +155,23 @@
         </div>
       </div>
 
-      <button type="submit" class="btn btn-primary" id="submit-btn" style="margin-top:1rem">Import Questions</button>
+      <div class="form-row" style="margin-top:1rem">
+        <label class="form-label">🖼 Images used by the questions (optional)</label>
+        <input type="file" name="images" id="images-input" class="form-input" accept="image/png,image/jpeg,image/gif,image/webp" multiple>
+        <div class="form-hint">Select all the pictures at once (hold Ctrl). In your file, put each picture's file name in the <b>image</b> column, e.g. <code>triangle.png</code> — it will show under that question. PNG, JPG, GIF or WebP, up to 8&nbsp;MB each.</div>
+      </div>
+
+      <button type="submit" class="btn btn-primary" id="submit-btn" style="margin-top:.25rem">Import Questions</button>
       {% if bank %}<a href="{{ url('examhub:bank_questions', bank.pk) }}" class="btn btn-outline">Back to Bank</a>{% else %}<a href="{{ url('examhub:bank_list') }}" class="btn btn-outline">Question Banks</a>{% endif %}
     </form>
 
     <details class="bu-cheat">
       <summary>Field reference by question type</summary>
       <div class="bu-cheat-grid">
-        <div class="bu-cheat-item"><b>All types:</b> type, stem, difficulty, topic, subtopic, points, year, explanation</div>
-        <div class="bu-cheat-item"><b>mcq_single / mcq_multi:</b> choice_a…choice_f, correct (e.g. "A" or "A,C")</div>
+        <div class="bu-cheat-item"><b>All types:</b> type, stem, difficulty, topic, subtopic, points, year, explanation, image</div>
+        <div class="bu-cheat-item"><b>Equations:</b> write LaTeX between dollar signs, e.g. <code>$\frac{1}{2}$</code>, <code>$x^2$</code>, <code>$H_2SO_4$</code>, <code>$\sqrt{16}$</code> (in JSON double every backslash: <code>\\frac</code>)</div>
+        <div class="bu-cheat-item"><b>image:</b> a picture's file name (uploaded under "Images") or a full https:// address</div>
+        <div class="bu-cheat-item"><b>mcq_single / mcq_multi:</b> choice_a…choice_f, correct (e.g. "A" or "AC")</div>
         <div class="bu-cheat-item"><b>true_false:</b> answer (true/false)</div>
         <div class="bu-cheat-item"><b>fill_blank:</b> answer (accepted words, "|" separated)</div>
         <div class="bu-cheat-item"><b>numeric:</b> answer, tolerance, unit</div>

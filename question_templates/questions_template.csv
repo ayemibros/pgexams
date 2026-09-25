@@ -1,0 +1,12 @@
+﻿type,stem,choice_a,choice_b,choice_c,choice_d,correct,answer,unit,tolerance,image,explanation,topic,year,points,difficulty
+mcq_single,Simplify $\frac{2}{3} + \frac{1}{6}$,$\frac{5}{6}$,$\frac{3}{9}$,$\frac{1}{2}$,$\frac{3}{6}$,A,,,,,LCM of 3 and 6 is 6: $\frac{4}{6} + \frac{1}{6} = \frac{5}{6}$,Fractions,2023,1,easy
+mcq_single,Find $x$ if $x^2 - 5x + 6 = 0$,$x = 1$ or $x = 6$,$x = 2$ or $x = 3$,$x = -2$ or $x = -3$,$x = 5$ or $x = 6$,B,,,,,Factorise: $(x - 2)(x - 3) = 0$,Quadratic Equations,2024,1,medium
+mcq_single,Evaluate $\sqrt{144} + 2^3$,16,20,24,28,B,,,,,"$\sqrt{144} = 12$ and $2^3 = 8$, so $12 + 8 = 20$",Indices,2022,1,easy
+mcq_single,"In the right-angled triangle shown, find the length $x$.",5 cm,6 cm,7 cm,12 cm,A,,,,triangle.png,Pythagoras: $x = \sqrt{3^2 + 4^2} = \sqrt{25} = 5$ cm,Geometry,2024,2,medium
+mcq_single,Which is the chemical formula of sulphuric acid?,$H_2SO_3$,$HSO_4$,$H_2SO_4$,$H_2S$,C,,,,,Sulphuric acid is $H_2SO_4$,Chemical Formulae,2023,1,easy
+mcq_single,"A resistor of $4\,\Omega$ carries a current of $3\,A$. What is the voltage across it?","$0.75\,V$","$7\,V$","$12\,V$","$1.33\,V$",C,,,,,"Ohm's law: $V = IR = 3 \times 4 = 12\,V$",Electricity,2021,1,easy
+mcq_multi,Which of the following are vector quantities? (Choose all that apply),Velocity,Mass,Force,Temperature,AC,,,,,Vectors have magnitude and direction: velocity and force.,Mechanics,,2,medium
+true_false,The derivative of $x^3$ with respect to $x$ is $3x^2$.,,,,,,true,,,,$\frac{d}{dx}x^n = nx^{n-1}$,Calculus,,1,easy
+numeric,"A body of mass $2\,kg$ accelerates at $3\,m/s^2$. Find the force acting on it.",,,,,,6,N,0,,"$F = ma = 2 \times 3 = 6\,N$",Mechanics,2024,1,easy
+numeric,"Calculate the number of moles in $22\,g$ of $CO_2$ ($C = 12$, $O = 16$).",,,,,,0.5,mol,0.01,,"Molar mass of $CO_2 = 44\,g/mol$; $22 \div 44 = 0.5$ mol",Mole Concept,2023,2,medium
+fill_blank,The SI unit of electric charge is the ____.,,,,,,coulomb|C,,,,Charge is measured in coulombs (C).,Electricity,,1,easy
