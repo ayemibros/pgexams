@@ -42,10 +42,13 @@ function createApp() {
   app.use(parseBody);
 
   const MySQLStore = MySQLStoreFactory(session);
+  const sessionStore = new MySQLStore({ createDatabaseTable: true, clearExpired: true, checkExpirationInterval: 15 * 60 * 1000 }, db.getPool());
+  // An 'error' event with no listener would crash the process on a database blip.
+  sessionStore.on('error', (err) => console.error(`[${new Date().toISOString()}] Session store error:`, err.message));
   app.use(session({
     name: 'sessionid',
     secret: config.SECRET_KEY,
-    store: new MySQLStore({ createDatabaseTable: true, clearExpired: true, checkExpirationInterval: 15 * 60 * 1000 }, db.getPool()),
+    store: sessionStore,
     resave: false,
     saveUninitialized: false,
     cookie: { maxAge: config.SESSION_COOKIE_AGE_MS, httpOnly: true, sameSite: 'lax', secure: config.SESSION_COOKIE_SECURE },

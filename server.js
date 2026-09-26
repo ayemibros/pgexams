@@ -3,6 +3,15 @@ const config = require('./src/config');
 const { createApp } = require('./src/app');
 const { migrate } = require('./scripts/migrate');
 
+// A brief database/network outage makes background work fail — e.g. the
+// session store's periodic clean-up of expired logins. Node's default is to
+// exit on such an unhandled rejection, taking the whole site down; log it and
+// keep serving instead (requests that need the database still get an error
+// page until it's reachable again, then everything recovers by itself).
+process.on('unhandledRejection', (err) => {
+  console.error(`[${new Date().toISOString()}] Background error (site keeps running):`, err && err.message ? err.message : err);
+});
+
 async function main() {
   // Like the Procfile's `manage.py migrate` before start: make sure the schema exists.
   await migrate({ quiet: true });
