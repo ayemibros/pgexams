@@ -126,7 +126,7 @@ async function trialQuestionPool() {
     `SELECT DISTINCT q.id, (e.is_ept = 1 AND e.bundle_id IS NULL) AS ept
      FROM examhub_examquestion eq JOIN examhub_examsection s ON s.id = eq.section_id JOIN examhub_exam e ON e.id = s.exam_id
      JOIN examhub_question q ON q.id = eq.bank_question_id
-     WHERE e.is_published = 1 AND e.is_self_study = 0 AND q.question_type <> 'theory'`,
+     WHERE e.is_published = 1 AND e.is_self_study = 0 AND e.mode <> 'practice' AND q.question_type <> 'theory'`,
   );
   const ept = [...new Set(rows.filter((r) => Number(r.ept)).map((r) => r.id))];
   return ept.length >= TRIAL_SIZE ? ept : [...new Set(rows.map((r) => r.id))];
@@ -159,7 +159,9 @@ async function liveSchoolItems(user) {
   const exams = await publishedExams(
     'AND (available_from IS NULL OR available_from <= ?) AND (available_until IS NULL OR available_until >= ?)', [t, t],
   );
-  const eligible = exams.filter((e) => profile.allows(e.subject, e.bundle, e.counts_as_ept));
+  // Only scheduled exams (with an opening or closing time) are "open right now";
+  // always-available practice papers would otherwise fill the bell and banner.
+  const eligible = exams.filter((e) => (e.available_from || e.available_until) && profile.allows(e.subject, e.bundle, e.counts_as_ept));
 
   // One query for every attempt instead of two per exam (this runs on every page).
   const completed = new Map();
@@ -311,11 +313,21 @@ route(router, 'examhub:exam_list', async (req, res) => {
     }
   }
 
+  // Question count per exam, for the card.
+  const questionCounts = new Map();
+  if (exams.length) {
+    for (const r of await db.all(
+      `SELECT s.exam_id, COUNT(q.id) AS n FROM examhub_examsection s JOIN examhub_examquestion q ON q.section_id = s.id
+       WHERE s.exam_id IN (?) GROUP BY s.exam_id`, [exams.map((e) => e.id)],
+    )) questionCounts.set(r.exam_id, Number(r.n));
+  }
+
   const eptItems = [];
   const otherItems = [];
   const programmes = new Map();
   for (const exam of exams) {
     const item = examCard(exam, attemptsByExam.get(exam.id) || [], now);
+    item.question_count = questionCounts.get(exam.id) || 0;
     if (exam.counts_as_ept) eptItems.push(item);
     else if (exam.bundle && exam.bundle.level === 'postgraduate') {
       if (!programmes.has(exam.bundle.id)) programmes.set(exam.bundle.id, { bundle: exam.bundle, items: [] });
@@ -336,6 +348,9 @@ route(router, 'examhub:exam_list', async (req, res) => {
 
   return render(req, res, 'examhub/student/list.html', {
     active: 'exams', trial: await trialState(user), ept_items: eptItems, ept_allowed: profile.allows(null, null, true),
+    // Full mock papers first, then topic drills (practice mode: instant feedback).
+    ept_papers: eptItems.filter((i) => i.exam.mode !== 'practice'),
+    ept_drills: eptItems.filter((i) => i.exam.mode === 'practice'),
     programme_sections: programmeSections, other_items: otherItems, exam_total: exams.length,
     ...(await accessSummary(user, profile)),
   });

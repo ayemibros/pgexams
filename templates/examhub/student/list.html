@@ -57,6 +57,10 @@
 .ex-year{font-size:1.625rem;font-weight:700;letter-spacing:-.04em;color:var(--text);line-height:1}
 .ex-kind{font-size:.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--accent)}
 .ex-fresh{font-size:.75rem;color:var(--muted-2);margin-bottom:.875rem}
+.ex-subhead{display:flex;align-items:baseline;gap:.4rem .75rem;flex-wrap:wrap;margin:1.25rem 0 .75rem}
+.ex-subhead:first-of-type{margin-top:.25rem}
+.ex-subhead b{font-size:.95rem;font-weight:700;color:var(--text)}
+.ex-subhead span{font-size:.78rem;color:var(--muted)}
 .ex-none{padding:1.5rem;border:1.5px dashed var(--border);border-radius:14px;text-align:center;font-size:.8125rem;color:var(--muted-2);background:var(--card)}
 .ex-banner{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;padding:.9rem 1.1rem;border-radius:12px;margin-bottom:1rem;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);color:var(--warning);font-size:.8125rem;font-weight:500}
 .ex-cta{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:3rem 2rem;text-align:center;margin-bottom:2rem}
@@ -95,12 +99,19 @@
   <div class="ex-sec-head">
     <div>
       <h2>{{ site_settings.shared_exam_name|default(site_settings.shared_exam_short_name) }} ({{ site_settings.shared_exam_short_name }})</h2>
-      <p>The same test for every department. Practice each year's paper.</p>
+      <p>The same test for every department. Take the full practice papers, and sharpen weak areas with topic drills.</p>
     </div>
     <span class="ex-tag">Included with your subscription</span>
   </div>
   {% if ept_items %}
-  <div class="cbt-grid">{% for item in ept_items %}{% include "examhub/student/_exam_card.html" %}{% endfor %}</div>
+  {% if ept_papers %}
+  <div class="ex-subhead"><b>Practice papers</b><span>Full mock tests in the real exam format · score at the end</span></div>
+  <div class="cbt-grid">{% for item in ept_papers %}{% include "examhub/student/_exam_card.html" %}{% endfor %}</div>
+  {% endif %}
+  {% if ept_drills %}
+  <div class="ex-subhead"><b>Topic drills</b><span>One topic at a time · instant feedback and explanations</span></div>
+  <div class="cbt-grid">{% for item in ept_drills %}{% include "examhub/student/_exam_card.html" %}{% endfor %}</div>
+  {% endif %}
   {% else %}
   <div class="ex-none">{{ site_settings.shared_exam_short_name }} past questions are being added. Please check back soon.</div>
   {% endif %}

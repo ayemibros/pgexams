@@ -8,6 +8,7 @@
     </div>
     <div class="cbt-card-title">{{ exam.title }}</div>
     <div class="chip-row">
+      {% if item.question_count %}<span class="chip">{{ item.question_count }} questions</span>{% endif %}
       {% if exam.time_limit_minutes %}<span class="chip">{{ exam.time_limit_minutes }} min</span>{% else %}<span class="chip">Untimed</span>{% endif %}
       <span class="chip">Pass {{ exam.pass_score }}%</span>
       {% if exam.negative_marking %}<span class="chip chip-neg">−ve Marks</span>{% endif %}
