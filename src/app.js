@@ -54,6 +54,23 @@ function createApp() {
     cookie: { maxAge: config.SESSION_COOKIE_AGE_MS, httpOnly: true, sameSite: 'lax', secure: config.SESSION_COOKIE_SECURE },
   }));
 
+  // express-session sends the response headers before its store write finishes,
+  // so a browser can follow a redirect before the session exists in MySQL — the
+  // user lands logged out right after logging in (or loses a flash message).
+  // Finish saving first, then redirect.
+  app.use((req, res, next) => {
+    const redirect = res.redirect.bind(res);
+    res.redirect = (...args) => {
+      const hasData = req.session && Object.keys(req.session).some((k) => k !== 'cookie');
+      if (!hasData) return redirect(...args);
+      return req.session.save((err) => {
+        if (err) console.error(`[${new Date().toISOString()}] Session save before redirect failed:`, err.message);
+        redirect(...args);
+      });
+    };
+    next();
+  });
+
   app.use(loadUser);
   app.use(csrfProtect);
 

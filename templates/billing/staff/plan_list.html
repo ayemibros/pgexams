@@ -16,7 +16,7 @@
   {% for plan in plans %}
   <div class="entity-card">
     <div class="entity-card-head">
-      <div class="icon-chip icon-chip-lg" style="background:rgba(91,94,244,.1)">💳</div>
+      <div class="icon-chip icon-chip-lg" style="background:rgba(91,94,244,.1)">{{ icon("credit-card", css_class="ico") }}</div>
       <div>
         <div class="entity-card-title">{{ plan.name }}</div>
         <div class="entity-card-sub">₦{{ plan.price|floatformat(0)|intcomma }} · {{ plan.duration_days }} day{{ plan.duration_days|pluralize }}</div>
@@ -27,7 +27,7 @@
         <span class="pill pill-green">All access</span>
       {% else %}
         {% for subject in plan.subjects %}<span class="pill pill-gray">{{ subject.icon }} {{ subject.name }}</span>{% endfor %}
-        {% for bundle in plan.bundles %}<span class="pill pill-gray">🎯 {{ bundle.name }}</span>{% endfor %}
+        {% for bundle in plan.bundles %}<span class="pill pill-gray">{{ icon("target", css_class="ico") }} {{ bundle.name }}</span>{% endfor %}
       {% endif %}
     </div>
     <div style="display:flex;gap:.5rem;flex-wrap:wrap">
@@ -36,7 +36,7 @@
     <div class="entity-card-foot">
       <a href="{{ url('billing:plan_edit', plan.pk) }}" class="btn btn-outline btn-sm">Edit</a>
       <form method="post" action="{{ url('billing:plan_delete', plan.pk) }}" style="display:inline;margin-left:auto" onsubmit="return confirm('Delete this plan?');">
-        {{ csrf_input }}<button type="submit" class="btn btn-outline btn-sm" style="color:#e11d48">Delete</button>
+        {{ csrf_input }}<button type="submit" class="btn btn-outline btn-sm" style="color:var(--danger)">Delete</button>
       </form>
     </div>
   </div>
@@ -45,7 +45,7 @@
 {% else %}
 <div class="card">
   <div class="empty-pro">
-    <div class="empty-pro-icon">💳</div>
+    <div class="empty-pro-icon">{{ icon("credit-card", css_class="ico") }}</div>
     <div class="empty-pro-title">No manual plans yet</div>
     <div class="empty-pro-sub">You likely don't need one — departments are priced automatically on the Pricing page. Create a Plan only for a one-off free or custom grant.</div>
     <a href="{{ url('billing:tier_list') }}" class="btn btn-primary" style="margin-top:1rem">Go to Pricing instead</a>

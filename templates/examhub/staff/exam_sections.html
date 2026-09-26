@@ -1,7 +1,7 @@
 {% extends "layout/staff_shell.html" %}
 {% block page_title %}{{ exam.title }} — Sections{% endblock %}
 {% block content %}
-<a href="{{ url('examhub:staff_exam_list') }}" style="font-size:.75rem;color:#9ca3af;text-decoration:none;display:inline-block;margin-bottom:.5rem">← All exams</a>
+<a href="{{ url('examhub:staff_exam_list') }}" style="font-size:.75rem;color:var(--muted-2);text-decoration:none;display:inline-block;margin-bottom:.5rem">← All exams</a>
 <div class="page-head">
   <div>
     <div class="page-head-title">{{ exam.title }}</div>
@@ -26,12 +26,12 @@
       {% for s in sections %}
       <tr>
         <td>{{ loop.index }}</td>
-        <td><a href="{{ url('examhub:section_questions', s.pk) }}" style="font-weight:700;text-decoration:none;color:#111827">{{ s.title }}</a>{% if s.subject %}<div style="font-size:.7rem;color:#9ca3af">{{ s.subject.name }}</div>{% endif %}{% if s.instructions %}<div style="font-size:.7rem;color:#9ca3af">{{ s.instructions }}</div>{% endif %}</td>
+        <td><a href="{{ url('examhub:section_questions', s.pk) }}" style="font-weight:700;text-decoration:none;color:var(--text)">{{ s.title }}</a>{% if s.subject %}<div style="font-size:.7rem;color:var(--muted-2)">{{ s.subject.name }}</div>{% endif %}{% if s.instructions %}<div style="font-size:.7rem;color:var(--muted-2)">{{ s.instructions }}</div>{% endif %}</td>
         <td>{{ s.question_count }}{% if s.questions_to_pick %} (pick {{ s.questions_to_pick }}){% endif %}</td>
         <td>{{ s.total_points|floatformat(0) }}</td>
         <td style="text-align:right">
           <a href="{{ url('examhub:section_questions', s.pk) }}" class="btn btn-outline btn-sm">Manage Questions</a>
-          <form method="post" style="display:inline" onsubmit="return confirm('Delete this section and its questions?');">{{ csrf_input }}<input type="hidden" name="action" value="delete_section"><input type="hidden" name="section_pk" value="{{ s.pk }}"><button type="submit" class="btn btn-outline btn-sm" style="color:#e11d48">Delete</button></form>
+          <form method="post" style="display:inline" onsubmit="return confirm('Delete this section and its questions?');">{{ csrf_input }}<input type="hidden" name="action" value="delete_section"><input type="hidden" name="section_pk" value="{{ s.pk }}"><button type="submit" class="btn btn-outline btn-sm" style="color:var(--danger)">Delete</button></form>
         </td>
       </tr>
       {% else %}

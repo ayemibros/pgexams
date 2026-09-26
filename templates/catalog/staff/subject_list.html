@@ -28,7 +28,7 @@
     <div class="entity-card-foot">
       <a href="{{ url('catalog:subject_edit', subject.pk) }}" class="btn btn-outline btn-sm">Edit</a>
       <form method="post" action="{{ url('catalog:subject_delete', subject.pk) }}" style="display:inline;margin-left:auto" onsubmit="return confirm('Delete this subject?');">
-        {{ csrf_input }}<button type="submit" class="btn btn-outline btn-sm" style="color:#e11d48">Delete</button>
+        {{ csrf_input }}<button type="submit" class="btn btn-outline btn-sm" style="color:var(--danger)">Delete</button>
       </form>
     </div>
   </div>
@@ -37,7 +37,7 @@
 {% else %}
 <div class="card">
   <div class="empty-pro">
-    <div class="empty-pro-icon">📚</div>
+    <div class="empty-pro-icon">{{ icon("library", css_class="ico") }}</div>
     <div class="empty-pro-title">No subjects yet</div>
     <div class="empty-pro-sub">Add the subjects students can be examined in.</div>
     <a href="{{ url('catalog:subject_add') }}" class="btn btn-primary" style="margin-top:1rem">+ New Subject</a>

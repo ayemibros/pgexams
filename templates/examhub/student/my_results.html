@@ -36,7 +36,7 @@
 {% else %}
 <div class="card">
   <div class="empty-pro">
-    <div class="empty-pro-icon">📊</div>
+    <div class="empty-pro-icon">{{ icon("bar-chart", css_class="ico") }}</div>
     <div class="empty-pro-title">No results yet</div>
     <div class="empty-pro-sub">Once you complete an exam, every attempt will be listed here.</div>
     <a href="{{ url('examhub:exam_list') }}" class="btn btn-primary" style="margin-top:1rem">Go to My Exams</a>

@@ -1,24 +1,24 @@
 {% extends "layout/base.html" %}
 {% block nav %}
-<a href="{{ url('examhub:staff_dashboard') }}" class="nav-link {% if active == 'dashboard' %}active{% endif %}">🏠 Dashboard</a>
-<a href="{{ url('examhub:bank_list') }}" class="nav-link {% if active == 'banks' %}active{% endif %}">📚 Question Banks</a>
-<a href="{{ url('examhub:bulk_upload_start') }}" class="nav-link {% if active == 'bulk_upload' %}active{% endif %}">⬆️ Bulk Upload Questions</a>
-<a href="{{ url('examhub:staff_exam_list') }}" class="nav-link {% if active == 'exams' %}active{% endif %}">📝 Exams</a>
+<a href="{{ url('examhub:staff_dashboard') }}" class="nav-link {% if active == 'dashboard' %}active{% endif %}">{{ icon("dashboard", css_class="ico") }} Dashboard</a>
+<a href="{{ url('examhub:bank_list') }}" class="nav-link {% if active == 'banks' %}active{% endif %}">{{ icon("library", css_class="ico") }} Question Banks</a>
+<a href="{{ url('examhub:bulk_upload_start') }}" class="nav-link {% if active == 'bulk_upload' %}active{% endif %}">{{ icon("upload", css_class="ico") }} Bulk Upload Questions</a>
+<a href="{{ url('examhub:staff_exam_list') }}" class="nav-link {% if active == 'exams' %}active{% endif %}">{{ icon("file-text", css_class="ico") }} Exams</a>
 {% if request.user.is_admin %}
 <div class="nav-sep">Admin</div>
-<a href="{{ url('catalog:faculty_list') }}" class="nav-link {% if active == 'faculties' %}active{% endif %}">🎓 Faculties</a>
-<a href="{{ url('catalog:department_list') }}" class="nav-link {% if active == 'departments' %}active{% endif %}">🏢 Departments</a>
-<a href="{{ url('catalog:subject_list') }}" class="nav-link {% if active == 'subjects' %}active{% endif %}">📖 Subjects</a>
-<a href="{{ url('catalog:program_list') }}" class="nav-link {% if active == 'programs' %}active{% endif %}">🎯 Programs</a>
-<a href="{{ url('accounts:account_list') }}" class="nav-link {% if active == 'accounts' %}active{% endif %}">👥 Accounts</a>
-<a href="{{ url('billing:subscription_list') }}" class="nav-link {% if active == 'subscriptions' %}active{% endif %}">💳 Subscriptions</a>
-<a href="{{ url('billing:tier_list') }}" class="nav-link {% if active == 'pricing' %}active{% endif %}">💲 Pricing</a>
-<a href="{{ url('billing:plan_list') }}" class="nav-link {% if active == 'plans' %}active{% endif %}">🏷️ Plans</a>
-<a href="{{ url('billing:payment_list') }}" class="nav-link {% if active == 'payments' %}active{% endif %}">💰 Payments</a>
+<a href="{{ url('catalog:faculty_list') }}" class="nav-link {% if active == 'faculties' %}active{% endif %}">{{ icon("academic-cap", css_class="ico") }} Faculties</a>
+<a href="{{ url('catalog:department_list') }}" class="nav-link {% if active == 'departments' %}active{% endif %}">{{ icon("building", css_class="ico") }} Departments</a>
+<a href="{{ url('catalog:subject_list') }}" class="nav-link {% if active == 'subjects' %}active{% endif %}">{{ icon("book-open", css_class="ico") }} Subjects</a>
+<a href="{{ url('catalog:program_list') }}" class="nav-link {% if active == 'programs' %}active{% endif %}">{{ icon("target", css_class="ico") }} Programs</a>
+<a href="{{ url('accounts:account_list') }}" class="nav-link {% if active == 'accounts' %}active{% endif %}">{{ icon("users", css_class="ico") }} Accounts</a>
+<a href="{{ url('billing:subscription_list') }}" class="nav-link {% if active == 'subscriptions' %}active{% endif %}">{{ icon("credit-card", css_class="ico") }} Subscriptions</a>
+<a href="{{ url('billing:tier_list') }}" class="nav-link {% if active == 'pricing' %}active{% endif %}">{{ icon("banknote", css_class="ico") }} Pricing</a>
+<a href="{{ url('billing:plan_list') }}" class="nav-link {% if active == 'plans' %}active{% endif %}">{{ icon("tag", css_class="ico") }} Plans</a>
+<a href="{{ url('billing:payment_list') }}" class="nav-link {% if active == 'payments' %}active{% endif %}">{{ icon("wallet", css_class="ico") }} Payments</a>
 {% endif %}
 {% if request.user.is_super_admin %}
 <div class="nav-sep">Super Admin</div>
-<a href="{{ url('branding:site_settings') }}" class="nav-link {% if active == 'site_settings' %}active{% endif %}">🏛️ Site Branding</a>
-<a href="/admin/" class="nav-link">⚙️ Django Admin</a>
+<a href="{{ url('branding:site_settings') }}" class="nav-link {% if active == 'site_settings' %}active{% endif %}">{{ icon("landmark", css_class="ico") }} Site Branding</a>
+<a href="/admin/" class="nav-link">{{ icon("settings", css_class="ico") }} Django Admin</a>
 {% endif %}
 {% endblock %}

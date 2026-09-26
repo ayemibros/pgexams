@@ -2,8 +2,8 @@
 {% block page_title %}Results — {{ exam.title }}{% endblock %}
 {% block content %}
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:.75rem">
-  <div style="font-size:.8125rem;color:#6b7280">{{ total_done }} completed &bull; {{ pass_count }} passed &bull; avg {{ avg_score|floatformat(1) }}%</div>
-  <a href="?export=csv" class="btn btn-outline">⬇ Export CSV</a>
+  <div style="font-size:.8125rem;color:var(--muted)">{{ total_done }} completed &bull; {{ pass_count }} passed &bull; avg {{ avg_score|floatformat(1) }}%</div>
+  <a href="?export=csv" class="btn btn-outline">{{ icon("download", css_class="ico") }} Export CSV</a>
 </div>
 <div class="card">
   <table class="table">

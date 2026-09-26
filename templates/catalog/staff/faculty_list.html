@@ -31,7 +31,7 @@
     <div class="entity-card-foot">
       <a href="{{ url('catalog:faculty_edit', faculty.pk) }}" class="btn btn-outline btn-sm">Edit</a>
       <form method="post" action="{{ url('catalog:faculty_delete', faculty.pk) }}" style="display:inline;margin-left:auto" onsubmit="return confirm('Delete this faculty? Its departments will be unassigned.');">
-        {{ csrf_input }}<button type="submit" class="btn btn-outline btn-sm" style="color:#e11d48">Delete</button>
+        {{ csrf_input }}<button type="submit" class="btn btn-outline btn-sm" style="color:var(--danger)">Delete</button>
       </form>
     </div>
   </div>
@@ -40,7 +40,7 @@
 {% else %}
 <div class="card">
   <div class="empty-pro">
-    <div class="empty-pro-icon">🎓</div>
+    <div class="empty-pro-icon">{{ icon("academic-cap", css_class="ico") }}</div>
     <div class="empty-pro-title">No faculties yet</div>
     <div class="empty-pro-sub">Faculties group departments together — e.g. Faculty of Science, Faculty of Law — and power the postgraduate Subscribe page's Faculty → Department picker.</div>
     <a href="{{ url('catalog:faculty_add') }}" class="btn btn-primary" style="margin-top:1rem">+ New Faculty</a>

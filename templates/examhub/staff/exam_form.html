@@ -5,17 +5,17 @@
 .kind-row{display:flex;gap:.75rem;margin-bottom:1.25rem}
 .kind-opt{flex:1;display:flex;align-items:center;gap:.6rem;padding:.9rem 1rem;border:1.5px solid var(--border);border-radius:10px;cursor:pointer;transition:border-color .15s,background .15s}
 .kind-opt:has(input:checked){border-color:var(--accent);background:rgba(91,94,244,.06)}
-.kind-opt b{font-size:.85rem;color:#111827}
-.kind-opt span{display:block;font-size:.72rem;color:#9ca3af;margin-top:.1rem}
+.kind-opt b{font-size:.85rem;color:var(--text)}
+.kind-opt span{display:block;font-size:.72rem;color:var(--muted-2);margin-top:.1rem}
 details.adv{margin-top:.5rem;border-top:1px solid var(--border);padding-top:1rem}
-details.adv summary{cursor:pointer;font-size:.8125rem;font-weight:700;color:#6b7280;list-style:none}
+details.adv summary{cursor:pointer;font-size:.8125rem;font-weight:700;color:var(--muted);list-style:none}
 details.adv summary::-webkit-details-marker{display:none}
-details.adv summary::before{content:'▸ ';color:#9ca3af}
+details.adv summary::before{content:'▸ ';color:var(--muted-2)}
 details.adv[open] summary::before{content:'▾ '}
 details.adv .adv-body{padding-top:1rem}
 </style>
 
-<a href="{{ url('examhub:staff_exam_list') }}" style="font-size:.75rem;color:#9ca3af;text-decoration:none;display:inline-block;margin-bottom:.5rem">← All exams</a>
+<a href="{{ url('examhub:staff_exam_list') }}" style="font-size:.75rem;color:var(--muted-2);text-decoration:none;display:inline-block;margin-bottom:.5rem">← All exams</a>
 <div class="card" style="max-width:620px;padding:1.75rem">
   <div class="page-head-title" style="margin-bottom:.25rem">{% if exam %}Edit exam{% else %}New exam{% endif %}</div>
   <div class="page-head-sub" style="margin-bottom:1.5rem">{% if exam %}Change the details below, then add or edit its questions.{% else %}A few details, then you'll add its questions straight away.{% endif %}</div>

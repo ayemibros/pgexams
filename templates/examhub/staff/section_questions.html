@@ -12,15 +12,15 @@
 .choice-row{display:flex;align-items:center;gap:.6rem;margin-bottom:.5rem}
 .choice-row input[type=text]{flex:1}
 .tabs{display:flex;gap:.5rem;margin-bottom:1rem}
-.tab-btn{padding:.5rem 1rem;border-radius:9px;font-size:.8125rem;font-weight:700;border:1.5px solid #e5e7eb;background:#fff;cursor:pointer;color:#6b7280}
-.tab-btn.active{background:#111827;color:#fff;border-color:#111827}
+.tab-btn{padding:.5rem 1rem;border-radius:9px;font-size:.8125rem;font-weight:700;border:1.5px solid var(--border);background:var(--card);cursor:pointer;color:var(--muted)}
+.tab-btn.active{background:#111827;color:#fff;border-color:var(--border-strong)}
 .tab-panel{display:none}
 .tab-panel.active{display:block}
-.mq-adv-link{font-size:.75rem;color:#9ca3af;text-decoration:none}
-.mq-adv-link:hover{color:#6b7280;text-decoration:underline}
+.mq-adv-link{font-size:.75rem;color:var(--muted-2);text-decoration:none}
+.mq-adv-link:hover{color:var(--muted);text-decoration:underline}
 </style>
 
-<a href="{{ url('examhub:staff_exam_list') }}" style="font-size:.75rem;color:#9ca3af;text-decoration:none;display:inline-block;margin-bottom:.5rem">← All exams</a>
+<a href="{{ url('examhub:staff_exam_list') }}" style="font-size:.75rem;color:var(--muted-2);text-decoration:none;display:inline-block;margin-bottom:.5rem">← All exams</a>
 <div class="page-head">
   <div>
     <div class="page-head-title">{% if is_only_section %}{{ exam.title }}{% else %}{{ section.title }}{% endif %}</div>
@@ -57,7 +57,7 @@
           <td>{{ eq.eff_stem|striptags|truncatechars(80) }}</td>
           <td>{{ eq.eff_type }}</td>
           <td><input type="number" step="0.5" name="points_{{ eq.pk }}" value="{{ eq.points }}" class="form-input" style="width:80px" form="points-form"></td>
-          <td><button type="button" class="btn btn-outline btn-sm" style="color:#e11d48" onclick="removeQuestion({{ eq.pk }})">Remove</button></td>
+          <td><button type="button" class="btn btn-outline btn-sm" style="color:var(--danger)" onclick="removeQuestion({{ eq.pk }})">Remove</button></td>
         </tr>
         {% else %}
         <tr><td colspan="5" class="empty">No questions yet — add the first one below.</td></tr>
@@ -143,7 +143,7 @@
 
 <div class="tab-panel" id="tab-bank">
   <div class="card" style="padding:1.25rem">
-    <p style="font-size:.8125rem;color:#6b7280;margin:0 0 1rem">Pull in a question you've already written for another exam, instead of retyping it.</p>
+    <p style="font-size:.8125rem;color:var(--muted);margin:0 0 1rem">Pull in a question you've already written for another exam, instead of retyping it.</p>
     <form method="get" style="display:flex;gap:.5rem;margin-bottom:1rem">
       <select name="bank" class="form-select" onchange="this.form.submit()">
         <option value="">Choose a bank…</option>

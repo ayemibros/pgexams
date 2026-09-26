@@ -12,17 +12,17 @@
 .choice-row{display:flex;align-items:center;gap:.6rem;margin-bottom:.5rem}
 .choice-row input[type=text]{flex:1}
 .form-card{max-width:760px;padding:1.75rem}
-.form-section-lbl{font-size:.7rem;font-weight:800;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;margin:1.5rem 0 .7rem;padding-top:1.2rem;border-top:1px solid #f1f2f4}
+.form-section-lbl{font-size:.7rem;font-weight:700;color:var(--muted-2);text-transform:uppercase;letter-spacing:.06em;margin:1.5rem 0 .7rem;padding-top:1.2rem;border-top:1px solid var(--border)}
 .form-section-lbl:first-of-type{margin-top:0;padding-top:0;border-top:none}
 .type-picker{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.55rem}
-.type-card{position:relative;display:flex;align-items:center;gap:.5rem;padding:.65rem .75rem;border:1.5px solid var(--border);border-radius:10px;cursor:pointer;font-size:.75rem;font-weight:700;color:#374151;background:#fff;transition:all .13s}
+.type-card{position:relative;display:flex;align-items:center;gap:.5rem;padding:.65rem .75rem;border:1.5px solid var(--border);border-radius:10px;cursor:pointer;font-size:.75rem;font-weight:700;color:var(--text-2);background:var(--card);transition:all .13s}
 .type-card:hover{border-color:var(--accent)}
 .type-card input{position:absolute;opacity:0;pointer-events:none}
 .type-card .ti{font-size:1rem}
 .type-card input:checked ~ .tc-label{color:var(--accent)}
 .type-card:has(input:checked){border-color:var(--accent);background:rgba(91,94,244,.06);box-shadow:0 0 0 3px rgba(91,94,244,.1)}
 </style>
-<a href="{{ url('examhub:bank_questions', bank.pk) }}" style="font-size:.75rem;color:#9ca3af;text-decoration:none;display:inline-block;margin-bottom:.5rem">← {{ bank.name }}</a>
+<a href="{{ url('examhub:bank_questions', bank.pk) }}" style="font-size:.75rem;color:var(--muted-2);text-decoration:none;display:inline-block;margin-bottom:.5rem">← {{ bank.name }}</a>
 <div class="page-head">
   <div>
     <div class="page-head-title">{% if q %}Edit Question{% else %}Add Question{% endif %}</div>
@@ -49,7 +49,7 @@
       <textarea name="stem" class="form-textarea" required>{{ q.stem|default('') }}</textarea>
     </div>
     <div class="form-row">
-      <label class="form-label">Main diagram / image URL <span style="font-weight:400;color:#9ca3af">(optional — shown after the question text; for inline images use the 🖼 button above)</span></label>
+      <label class="form-label">Main diagram / image URL <span style="font-weight:400;color:var(--muted-2)">(optional — shown after the question text; for inline images use the Image button above)</span></label>
       <input type="url" name="stem_image_url" class="form-input" value="{{ q.stem_image_url|default('') }}">
     </div>
 
@@ -139,7 +139,7 @@
     <div class="form-section-lbl">Feedback</div>
     <div class="form-row"><label class="form-label">Explanation (shown after answering)</label><textarea name="explanation" class="form-textarea">{{ q.explanation|default('') }}</textarea></div>
 
-    <div style="display:flex;gap:.75rem;margin-top:1.5rem;padding-top:1.2rem;border-top:1px solid #f1f2f4">
+    <div style="display:flex;gap:.75rem;margin-top:1.5rem;padding-top:1.2rem;border-top:1px solid var(--border)">
       <button type="submit" class="btn btn-primary">Save Question</button>
       <button type="submit" name="add_another" value="1" class="btn btn-outline">Save &amp; Add Another</button>
       <a href="{{ url('examhub:bank_questions', bank.pk) }}" class="btn btn-outline">Cancel</a>

@@ -2,7 +2,7 @@
 {% block page_title %}Programs{% endblock %}
 {% block content %}
 <style>
-.program-icon{background:linear-gradient(135deg,#f59e0b,#e11d48)}
+.program-icon{background:linear-gradient(135deg,#f59e0b,var(--primary))}
 </style>
 <div class="page-head">
   <div>
@@ -35,7 +35,7 @@
     <div class="entity-card-foot">
       <a href="{{ url('catalog:program_edit', program.pk) }}" class="btn btn-outline btn-sm">Edit</a>
       <form method="post" action="{{ url('catalog:program_delete', program.pk) }}" style="display:inline;margin-left:auto" onsubmit="return confirm('Delete this program?');">
-        {{ csrf_input }}<button type="submit" class="btn btn-outline btn-sm" style="color:#e11d48">Delete</button>
+        {{ csrf_input }}<button type="submit" class="btn btn-outline btn-sm" style="color:var(--danger)">Delete</button>
       </form>
     </div>
   </div>
@@ -44,7 +44,7 @@
 {% else %}
 <div class="card">
   <div class="empty-pro">
-    <div class="empty-pro-icon">🎯</div>
+    <div class="empty-pro-icon">{{ icon("target", css_class="ico") }}</div>
     <div class="empty-pro-title">No programs yet</div>
     <div class="empty-pro-sub">Programs are the Post-UTME / Postgraduate offerings students see and subscribe to on the homepage.</div>
     <a href="{{ url('catalog:program_add') }}" class="btn btn-primary" style="margin-top:1rem">+ New Program</a>

@@ -102,7 +102,7 @@
       <div class="rte-modal rte-modal-wide">
         <div class="rte-modal-head">Draw Diagram <button type="button" class="rte-x">&times;</button></div>
         <div class="rte-diagram-toolbar">
-          <button type="button" data-tool="pen" class="rte-tool active">✏ Pen</button>
+          <button type="button" data-tool="pen" class="rte-tool active">Pen</button>
           <button type="button" data-tool="line" class="rte-tool">／ Line</button>
           <button type="button" data-tool="rect" class="rte-tool">▭ Rect</button>
           <button type="button" data-tool="ellipse" class="rte-tool">◯ Ellipse</button>
@@ -487,18 +487,18 @@
       btn.disabled = true; btn.textContent = "Uploading…";
       uploadImage(fileInput.files[0], (url) => {
         insertAtCursor(textarea, `<img src="${url}" style="max-width:100%">`);
-        btn.disabled = false; btn.textContent = "🖼 Image";
+        btn.disabled = false; btn.textContent = "Image";
         fileInput.value = "";
-      }, (err) => { alert(err); btn.disabled = false; btn.textContent = "🖼 Image"; });
+      }, (err) => { alert(err); btn.disabled = false; btn.textContent = "Image"; });
     };
     toolbar.appendChild(fileInput);
-    toolbar.appendChild(makeBtn("🖼 Image", "Upload an image", () => fileInput.click(), "rte-img-btn"));
+    toolbar.appendChild(makeBtn("Image", "Upload an image", () => fileInput.click(), "rte-img-btn"));
 
     if (opts.diagrams !== false) {
-      toolbar.appendChild(makeBtn("✏ Diagram", "Draw a diagram", () => {
+      toolbar.appendChild(makeBtn("Diagram", "Draw a diagram", () => {
         openDiagramModal((url) => insertAtCursor(textarea, `<img src="${url}" style="max-width:100%">`));
       }));
-      toolbar.appendChild(makeBtn("📈 Graph", "Insert a function or data graph", () => {
+      toolbar.appendChild(makeBtn("Graph", "Insert a function or data graph", () => {
         openGraphModal((url) => insertAtCursor(textarea, `<img src="${url}" style="max-width:100%">`));
       }));
     }
@@ -551,7 +551,7 @@
       }, (err) => alert(err));
     };
     toolbar.appendChild(fileInput);
-    toolbar.appendChild(makeBtn("🖼", "Insert image", () => fileInput.click()));
+    toolbar.appendChild(makeBtn("Img", "Insert image", () => fileInput.click()));
 
     const preview = document.createElement("div");
     preview.className = "rte-compact-preview";

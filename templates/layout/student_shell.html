@@ -1,6 +1,6 @@
 {% extends "layout/base.html" %}
 {% block nav %}
-<a href="{{ url('examhub:student_dashboard') }}" class="nav-link {% if active == 'dashboard' %}active{% endif %}">🏠 Dashboard</a>
-<a href="{{ url('examhub:exam_list') }}" class="nav-link {% if active == 'exams' %}active{% endif %}">📝 My Exams</a>
-<a href="{{ url('examhub:student_results') }}" class="nav-link {% if active == 'results' %}active{% endif %}">📊 Results</a>
+<a href="{{ url('examhub:student_dashboard') }}" class="nav-link {% if active == 'dashboard' %}active{% endif %}">{{ icon("dashboard", css_class="ico") }} Dashboard</a>
+<a href="{{ url('examhub:exam_list') }}" class="nav-link {% if active == 'exams' %}active{% endif %}">{{ icon("file-text", css_class="ico") }} My Exams</a>
+<a href="{{ url('examhub:student_results') }}" class="nav-link {% if active == 'results' %}active{% endif %}">{{ icon("bar-chart", css_class="ico") }} Results</a>
 {% endblock %}

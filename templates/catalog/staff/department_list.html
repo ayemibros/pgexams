@@ -2,7 +2,7 @@
 {% block page_title %}Departments{% endblock %}
 {% block content %}
 <style>
-.dept-icon{background:linear-gradient(135deg,#5b5ef4,#8b5cf6)}
+.dept-icon{background:linear-gradient(135deg,var(--primary),#8b5cf6)}
 </style>
 <div class="page-head">
   <div>
@@ -25,14 +25,14 @@
         <div class="entity-card-sub">{{ department.faculty.name|default("No faculty") }} · {{ department.program_count }} program{{ department.program_count|pluralize }}</div>
       </div>
     </div>
-    {% if department.description %}<div style="font-size:.78rem;color:#6b7280;line-height:1.5">{{ department.description }}</div>{% endif %}
+    {% if department.description %}<div style="font-size:.78rem;color:var(--muted);line-height:1.5">{{ department.description }}</div>{% endif %}
     <div style="display:flex;gap:.5rem;flex-wrap:wrap">
       <span class="pill {% if department.is_active %}pill-green{% else %}pill-gray{% endif %}">{% if department.is_active %}Active{% else %}Inactive{% endif %}</span>
     </div>
     <div class="entity-card-foot">
       <a href="{{ url('catalog:department_edit', department.pk) }}" class="btn btn-outline btn-sm">Edit</a>
       <form method="post" action="{{ url('catalog:department_delete', department.pk) }}" style="display:inline;margin-left:auto" onsubmit="return confirm('Delete this department? Programs referencing it will be unassigned.');">
-        {{ csrf_input }}<button type="submit" class="btn btn-outline btn-sm" style="color:#e11d48">Delete</button>
+        {{ csrf_input }}<button type="submit" class="btn btn-outline btn-sm" style="color:var(--danger)">Delete</button>
       </form>
     </div>
   </div>
@@ -41,7 +41,7 @@
 {% else %}
 <div class="card">
   <div class="empty-pro">
-    <div class="empty-pro-icon">🏢</div>
+    <div class="empty-pro-icon">{{ icon("building", css_class="ico") }}</div>
     <div class="empty-pro-title">No departments yet</div>
     <div class="empty-pro-sub">Add the departments/faculties whose exam programs students can browse on the homepage.</div>
     <a href="{{ url('catalog:department_add') }}" class="btn btn-primary" style="margin-top:1rem">+ New Department</a>

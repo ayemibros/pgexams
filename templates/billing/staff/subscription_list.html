@@ -26,7 +26,7 @@
     <tbody>
       {% for sub in subscriptions %}
       <tr>
-        <td><div style="font-weight:700">{{ sub.student.get_full_name|default(sub.student.username) }}</div><div style="font-size:.7rem;color:#9ca3af">{{ sub.student.registration_number }}</div></td>
+        <td><div style="font-weight:700">{{ sub.student.get_full_name|default(sub.student.username) }}</div><div style="font-size:.7rem;color:var(--muted-2)">{{ sub.student.registration_number }}</div></td>
         <td>{{ sub.plan.name }}</td>
         <td>
           {% if sub.is_active_now %}<span class="pill pill-green">Active</span>
@@ -40,7 +40,7 @@
           <div class="row-actions" style="display:flex;gap:.3rem;justify-content:flex-end">
             <a href="{{ url('billing:subscription_edit', sub.pk) }}" class="btn btn-outline btn-sm">Edit</a>
             {% if sub.status == 'active' %}
-            <form method="post" action="{{ url('billing:subscription_cancel', sub.pk) }}" style="display:inline" onsubmit="return confirm('Cancel this subscription?');">{{ csrf_input }}<button type="submit" class="btn btn-outline btn-sm" style="color:#e11d48">Cancel</button></form>
+            <form method="post" action="{{ url('billing:subscription_cancel', sub.pk) }}" style="display:inline" onsubmit="return confirm('Cancel this subscription?');">{{ csrf_input }}<button type="submit" class="btn btn-outline btn-sm" style="color:var(--danger)">Cancel</button></form>
             {% endif %}
           </div>
         </td>
@@ -52,7 +52,7 @@
 {% else %}
 <div class="card">
   <div class="empty-pro">
-    <div class="empty-pro-icon">💳</div>
+    <div class="empty-pro-icon">{{ icon("credit-card", css_class="ico") }}</div>
     <div class="empty-pro-title">No subscriptions yet</div>
     <div class="empty-pro-sub">Grant a subscription to a student to give them access to a subject or program's exams.</div>
     <a href="{{ url('billing:subscription_add') }}" class="btn btn-primary" style="margin-top:1rem">+ Grant Subscription</a>

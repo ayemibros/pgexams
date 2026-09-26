@@ -2,7 +2,7 @@
 {% block page_title %}Question Banks{% endblock %}
 {% block content %}
 <style>
-.bank-icon{background:linear-gradient(135deg,#5b5ef4,#8b5cf6)}
+.bank-icon{background:linear-gradient(135deg,var(--primary),#8b5cf6)}
 </style>
 <div class="page-head">
   <div>
@@ -10,7 +10,7 @@
     <div class="page-head-sub">{{ banks|length }} bank{{ banks|length|pluralize }}</div>
   </div>
   <div class="page-head-actions">
-    <a href="{{ url('examhub:bulk_upload_start') }}" class="btn btn-outline">⬆ Bulk Upload Questions</a>
+    <a href="{{ url('examhub:bulk_upload_start') }}" class="btn btn-outline">{{ icon("upload", css_class="ico") }} Bulk Upload Questions</a>
     <a href="{{ url('examhub:bank_add') }}" class="btn btn-primary">+ New Bank</a>
   </div>
 </div>
@@ -20,7 +20,7 @@
   {% for bank in banks %}
   <div class="entity-card">
     <div class="entity-card-head">
-      <div class="icon-chip icon-chip-lg bank-icon" style="color:#fff">📚</div>
+      <div class="icon-chip icon-chip-lg bank-icon" style="color:#fff">{{ icon("library", css_class="ico") }}</div>
       <div>
         <div class="entity-card-title">{{ bank.name }}</div>
         <div class="entity-card-sub">{{ bank.subject.name|default("No subject") }}</div>
@@ -35,7 +35,7 @@
       <a href="{{ url('examhub:bulk_upload', bank.pk) }}" class="btn btn-outline btn-sm">Bulk Upload</a>
       <a href="{{ url('examhub:bank_edit', bank.pk) }}" class="btn btn-outline btn-sm">Edit</a>
       <form method="post" action="{{ url('examhub:bank_delete', bank.pk) }}" style="display:inline;margin-left:auto" onsubmit="return confirm('Delete this bank and all its questions?');">
-        {{ csrf_input }}<button type="submit" class="btn btn-outline btn-sm" style="color:#e11d48">Delete</button>
+        {{ csrf_input }}<button type="submit" class="btn btn-outline btn-sm" style="color:var(--danger)">Delete</button>
       </form>
     </div>
   </div>
@@ -44,11 +44,11 @@
 {% else %}
 <div class="card">
   <div class="empty-pro">
-    <div class="empty-pro-icon">📚</div>
+    <div class="empty-pro-icon">{{ icon("library", css_class="ico") }}</div>
     <div class="empty-pro-title">No question banks yet</div>
     <div class="empty-pro-sub">Create a bank to start adding questions — you can organize by subject however suits you.</div>
     <div style="display:flex;gap:.5rem;justify-content:center;margin-top:1rem;flex-wrap:wrap">
-      <a href="{{ url('examhub:bulk_upload_start') }}" class="btn btn-primary">⬆ Bulk Upload Questions</a>
+      <a href="{{ url('examhub:bulk_upload_start') }}" class="btn btn-primary">{{ icon("upload", css_class="ico") }} Bulk Upload Questions</a>
       <a href="{{ url('examhub:bank_add') }}" class="btn btn-outline">+ New Bank</a>
     </div>
   </div>

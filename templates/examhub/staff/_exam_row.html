@@ -1,6 +1,6 @@
 <tr>
   <td>
-    <a href="{% if exam.only_section %}{{ url('examhub:section_questions', exam.only_section.pk) }}{% else %}{{ url('examhub:exam_sections', exam.pk) }}{% endif %}" style="font-weight:700;text-decoration:none;color:#111827">{{ exam.title }}</a>
+    <a href="{% if exam.only_section %}{{ url('examhub:section_questions', exam.only_section.pk) }}{% else %}{{ url('examhub:exam_sections', exam.pk) }}{% endif %}" style="font-weight:700;text-decoration:none;color:var(--text)">{{ exam.title }}</a>
   </td>
   <td>{{ exam.year|default("—") }}</td>
   <td>{{ exam.total_q }}</td>
@@ -8,10 +8,10 @@
   <td>
     {% if exam.avg_score != none %}
     <div class="avg-cell">
-      <div class="mini-bar"><div class="mini-bar-fill" style="width:{{ exam.avg_score }}%;background:{% if exam.avg_score >= 70 %}#10b981{% elif exam.avg_score >= 50 %}#f59e0b{% else %}#e11d48{% endif %}"></div></div>
+      <div class="mini-bar"><div class="mini-bar-fill" style="width:{{ exam.avg_score }}%;background:{% if exam.avg_score >= 70 %}#10b981{% elif exam.avg_score >= 50 %}#f59e0b{% else %}var(--danger-solid){% endif %}"></div></div>
       <span style="font-size:.75rem;font-weight:700">{{ exam.avg_score }}%</span>
     </div>
-    {% else %}<span style="color:#d1d5db">—</span>{% endif %}
+    {% else %}<span style="color:var(--muted-2)">—</span>{% endif %}
   </td>
   <td>{% if exam.is_published %}<span class="pill pill-green">Published</span>{% else %}<span class="pill pill-gray">Draft</span>{% endif %}</td>
   <td>
@@ -21,7 +21,7 @@
       <a href="{{ url('examhub:exam_analytics', exam.pk) }}" class="btn btn-outline btn-sm">Analytics</a>
       <a href="{{ url('examhub:staff_exam_results', exam.pk) }}" class="btn btn-outline btn-sm">Results</a>
       <form method="post" action="{{ url('examhub:exam_clone', exam.pk) }}" style="display:inline">{{ csrf_input }}<button type="submit" class="btn btn-outline btn-sm">Clone</button></form>
-      <form method="post" action="{{ url('examhub:exam_delete', exam.pk) }}" style="display:inline" onsubmit="return confirm('Delete this exam?');">{{ csrf_input }}<button type="submit" class="btn btn-outline btn-sm" style="color:#e11d48">Delete</button></form>
+      <form method="post" action="{{ url('examhub:exam_delete', exam.pk) }}" style="display:inline" onsubmit="return confirm('Delete this exam?');">{{ csrf_input }}<button type="submit" class="btn btn-outline btn-sm" style="color:var(--danger)">Delete</button></form>
     </div>
   </td>
 </tr>

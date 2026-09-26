@@ -108,7 +108,7 @@ async function main() {
     const dupR = await dup.post('/accounts/register/', { full_name: 'Other Person', email: applicantEmail.toUpperCase(), password: PASSWORD, password_confirm: PASSWORD, next });
     dupR.text.includes('already exists') ? ok('duplicate email refused (case-insensitive)') : bad('duplicate email');
 
-    await page(s, '/dashboard/', "don't have an active subscription", 'dashboard (no subscription)');
+    await page(s, '/dashboard/', 'Activate your access', 'dashboard (no subscription)');
     await page(s, '/exams/', 'My Exams', 'my exams (no subscription)');
     const loginEmail = new Client();
     (await loginEmail.login(applicantEmail.toUpperCase())) === '/accounts/redirect/' ? ok('login with email, any case') : bad('email login');
