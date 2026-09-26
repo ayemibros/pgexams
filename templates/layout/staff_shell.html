@@ -4,6 +4,7 @@
 <a href="{{ url('examhub:bank_list') }}" class="nav-link {% if active == 'banks' %}active{% endif %}">{{ icon("library", css_class="ico") }} Question Banks</a>
 <a href="{{ url('examhub:bulk_upload_start') }}" class="nav-link {% if active == 'bulk_upload' %}active{% endif %}">{{ icon("upload", css_class="ico") }} Bulk Upload Questions</a>
 <a href="{{ url('examhub:staff_exam_list') }}" class="nav-link {% if active == 'exams' %}active{% endif %}">{{ icon("file-text", css_class="ico") }} Exams</a>
+<a href="{{ url('resources:list') }}" class="nav-link {% if active == 'resources' %}active{% endif %}">{{ icon("book-open", css_class="ico") }} E-Resources</a>
 {% if request.user.is_admin %}
 <div class="nav-sep">Admin</div>
 <a href="{{ url('catalog:faculty_list') }}" class="nav-link {% if active == 'faculties' %}active{% endif %}">{{ icon("academic-cap", css_class="ico") }} Faculties</a>

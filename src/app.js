@@ -80,6 +80,7 @@ function createApp() {
   app.use(require('./routes/branding').router);
   app.use(require('./routes/catalog').router);
   app.use(require('./routes/billing').router);
+  app.use(require('./routes/resources').router);
   app.use(require('./routes/examhub_student').router);
   app.use(require('./routes/examhub_staff').router);
 

@@ -139,6 +139,10 @@
     <div class="school-card-icon" style="background:rgba(91,94,244,.1)">{{ icon("bar-chart", css_class="ico") }}</div>
     <div><div class="school-card-title">My Results</div><div class="school-card-sub">Every attempt, tracked</div></div>
   </a>
+  <a href="{{ url('resources:list') }}" class="school-card">
+    <div class="school-card-icon" style="background:rgba(16,185,129,.1)">{{ icon("book-open", css_class="ico") }}</div>
+    <div><div class="school-card-title">E-Resources</div><div class="school-card-sub">Study guides for every EPT topic</div></div>
+  </a>
 </div>
 
 {% if trend_svg or subject_stats %}

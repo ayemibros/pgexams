@@ -1,0 +1,56 @@
+[
+  {
+    "slug": "ept-guide",
+    "title": "The UI Postgraduate EPT",
+    "subtitle": "What the Test of English covers, how it is scored, and how to prepare",
+    "topic": "Getting started",
+    "file": "ept-guide.pdf",
+    "pages": 3,
+    "size_kb": 104
+  },
+  {
+    "slug": "concord-rules",
+    "title": "Concord: The Rules of Subject–Verb Agreement",
+    "subtitle": "Every rule you need for Section D, with clear examples",
+    "topic": "Concord",
+    "file": "concord-rules.pdf",
+    "pages": 6,
+    "size_kb": 234
+  },
+  {
+    "slug": "capitalisation-rules",
+    "title": "Capitalisation Rules",
+    "subtitle": "When to use capital letters, and when not to",
+    "topic": "Mechanics",
+    "file": "capitalisation-rules.pdf",
+    "pages": 3,
+    "size_kb": 154
+  },
+  {
+    "slug": "parallel-structure",
+    "title": "Parallel Structure (Parallelism)",
+    "subtitle": "Balanced sentences for Section A",
+    "topic": "Parallelism",
+    "file": "parallel-structure.pdf",
+    "pages": 2,
+    "size_kb": 129
+  },
+  {
+    "slug": "stylistic-variation",
+    "title": "Stylistic Variation",
+    "subtitle": "Choosing the right language for the context (Section C)",
+    "topic": "Stylistic variation",
+    "file": "stylistic-variation.pdf",
+    "pages": 3,
+    "size_kb": 136
+  },
+  {
+    "slug": "spelling-guide",
+    "title": "Spelling for the EPT",
+    "subtitle": "The rules behind English spelling, and the words most often misspelt",
+    "topic": "Mechanics",
+    "file": "spelling-guide.pdf",
+    "pages": 4,
+    "size_kb": 197
+  }
+]

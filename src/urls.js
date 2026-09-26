@@ -61,6 +61,9 @@ const URLS = {
   'billing:checkout_callback': '/subscribe/callback/',
   'billing:payment_webhook': '/subscribe/webhook/',
 
+  // ── E-Resources (study guides) ───────────────────────────────────────
+  'resources:list': '/resources/',
+  'resources:file': '/resources/:slug/',
   // ── examhub: student ─────────────────────────────────────────────────
   'examhub:student_dashboard': '/dashboard/',
   'examhub:exam_list': '/exams/',

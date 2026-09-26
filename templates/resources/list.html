@@ -1,0 +1,68 @@
+{% extends shell_template %}
+{% block page_title %}E-Resources{% endblock %}
+{% block content %}
+<style>
+.res-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem}
+@media(max-width:640px){.res-grid{grid-template-columns:1fr}}
+.res-card{display:flex;flex-direction:column;gap:.75rem;padding:1.2rem 1.25rem;background:linear-gradient(180deg,var(--sheen),transparent),var(--card);border:1px solid var(--border);border-radius:16px;transition:border-color .15s,transform .15s}
+.res-card:hover{border-color:var(--border-strong);transform:translateY(-2px)}
+.res-head{display:flex;gap:.9rem;align-items:flex-start}
+.res-icon{width:46px;height:54px;border-radius:8px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:var(--danger-soft);color:var(--danger);font-size:.6rem;font-weight:700;letter-spacing:.06em}
+.res-topic{font-size:.66rem;font-weight:500;text-transform:uppercase;letter-spacing:.12em;color:var(--primary-text)}
+.res-title{font-size:.98rem;font-weight:700;color:var(--text);line-height:1.3;margin-top:.15rem}
+.res-sub{font-size:.8rem;color:var(--muted);line-height:1.5}
+.res-meta{display:flex;gap:.4rem;flex-wrap:wrap}
+.res-chip{font-size:.68rem;font-weight:500;padding:.2rem .55rem;border-radius:99px;background:var(--surface2);color:var(--muted)}
+.res-chip.free{background:var(--success-soft);color:var(--success)}
+.res-actions{display:flex;gap:.5rem;margin-top:auto;padding-top:.75rem;border-top:1px solid var(--border)}
+.res-actions .btn{flex:1}
+.res-locked{display:flex;align-items:center;gap:.4rem;font-size:.8rem;color:var(--muted)}
+</style>
+
+<div class="page-head">
+  <div>
+    <div class="page-head-title">{{ icon("book-open", css_class="ico") }} E-Resources</div>
+    <div class="page-head-sub">Study guides for the EPT. Read them online or download them to study offline.</div>
+  </div>
+</div>
+
+{% if not has_access %}
+<a href="{{ url('billing:plans_browse') }}" class="highlight-card" style="margin-bottom:1.25rem">
+  <span class="highlight-card-icon">{{ icon("key", size=20) }}</span>
+  <span style="flex:1"><b>Unlock every study guide</b><span>The EPT overview is free. Subscribe to read and download all the guides, along with the full practice papers and topic drills.</span></span>
+  <span class="btn btn-primary btn-sm">Subscribe</span>
+</a>
+{% endif %}
+
+{% if items %}
+<div class="res-grid">
+  {% for r in items %}
+  <article class="res-card">
+    <div class="res-head">
+      <div class="res-icon">{{ icon("file-text", size=20) }}PDF</div>
+      <div>
+        <div class="res-topic">{{ r.topic }}</div>
+        <div class="res-title">{{ r.title }}</div>
+      </div>
+    </div>
+    <div class="res-sub">{{ r.subtitle }}</div>
+    <div class="res-meta">
+      <span class="res-chip">{{ r.pages }} page{{ r.pages|pluralize }}</span>
+      <span class="res-chip">{{ r.size_kb }} KB</span>
+      {% if r.free %}<span class="res-chip free">Free</span>{% endif %}
+    </div>
+    <div class="res-actions">
+      {% if r.unlocked %}
+      <a href="{{ url('resources:file', r.slug) }}" target="_blank" rel="noopener" class="btn btn-primary btn-sm">{{ icon("book-open", css_class="ico") }} Read</a>
+      <a href="{{ url('resources:file', r.slug) }}?download=1" class="btn btn-outline btn-sm">{{ icon("download", css_class="ico") }} Download</a>
+      {% else %}
+      <span class="res-locked">{{ icon("lock", size=16) }} Included with a subscription</span>
+      {% endif %}
+    </div>
+  </article>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card empty-pro"><div class="empty-pro-icon">{{ icon("book-open", size=34) }}</div><div class="empty-pro-title">Study guides are on the way</div><div class="empty-pro-sub">Please check back soon.</div></div>
+{% endif %}
+{% endblock %}
