@@ -161,7 +161,7 @@ async function main() {
         await page(s, `/attempt/${aid}/results/`, 'Score', 'results');
         await page(s, `/attempt/${aid}/review/`, 'Review', 'review');
         await page(s, '/results/', '#1', 'results history (attempt numbering)');
-        await page(s, `/results/?exam=${examId}`, 'Practise again', 'results filtered by exam');
+        await page(s, `/results/?exam=${examId}`, 'Practice again', 'results filtered by exam');
       } else bad(`start -> ${st.status} ${st.location}`);
     } else bad('no exam visible after subscribing');
     const subscribed = await db.one("SELECT id FROM billing_subscription WHERE student_id = ? AND status = 'active'", [applicant.id]);

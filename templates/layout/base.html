@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet">
+{% include "layout/_theme_head.html" %}
 <link rel="stylesheet" href="/static/css/app.css">
 {% block extra_head %}{% endblock %}
 </head>
@@ -44,6 +45,8 @@
     <div class="topbar">
       <button type="button" onclick="document.getElementById('sidebar').classList.toggle('open')" class="icon-btn" id="menu-toggle" aria-label="Menu">{{ icon("menu", size=20) }}</button>
       <div class="topbar-title">{% block page_title %}{% endblock %}</div>
+      <div style="display:flex;align-items:center;gap:.5rem">
+      {% include "layout/_theme_picker.html" %}
       <div class="notif-wrap">
         {% if notif_count %}
         <button type="button" class="icon-btn notif-bell has-notif" onclick="document.getElementById('notif-dd').classList.toggle('open')" aria-label="Notifications">
@@ -67,6 +70,7 @@
           {% endfor %}
         </div>
         {% endif %}
+      </div>
       </div>
     </div>
     {% if messages %}

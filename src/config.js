@@ -59,6 +59,9 @@ module.exports = {
   // Subscribe flow shows a clear not-configured message instead of erroring.
   PAYSTACK_SECRET_KEY,
   PAYSTACK_PUBLIC_KEY: env('PAYSTACK_PUBLIC_KEY', ''),
+  // Community groups linked from the footer, support page and student dashboard.
+  TELEGRAM_URL: env('TELEGRAM_URL', 'https://t.me/university9ja'),
+  WHATSAPP_GROUP_URL: env('WHATSAPP_GROUP_URL', 'https://chat.whatsapp.com/H6tf9eOQEzADwxNXjM9M0P'),
   // LOCAL TESTING ONLY: replaces the Paystack redirect with a fake "simulate
   // payment" page. On only when PAYMENT_SIMULATION=True is set explicitly,
   // DEBUG is on, and no Paystack secret key is configured.

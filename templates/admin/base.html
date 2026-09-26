@@ -7,14 +7,15 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet">
+{% include "layout/_theme_head.html" %}
 <link rel="stylesheet" href="/static/css/app.css">
 <style>
 *{box-sizing:border-box}
 body{font-size:14px}
 a{color:var(--primary-text);text-decoration:none}
 a:hover{text-decoration:underline}
-header{background:rgba(8,12,20,.8);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);color:#fff;padding:.85rem 1.5rem;display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap}
-header .brand{display:inline-flex;align-items:center;gap:.5rem;font-weight:700;font-size:1rem;color:#fff}
+header{background:var(--chrome);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);color:var(--text-strong);padding:.85rem 1.5rem;display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap}
+header .brand{display:inline-flex;align-items:center;gap:.5rem;font-weight:700;font-size:1rem;color:var(--text-strong)}
 header .who{font-size:.8rem;color:var(--text-2)}
 header .who a{color:var(--amber)}
 header form{display:inline}
@@ -24,7 +25,7 @@ header button{background:none;border:none;color:var(--amber);cursor:pointer;font
 main{max-width:1200px;margin:0 auto;padding:1.5rem}
 h1{font-size:1.3rem;margin:0 0 1rem}
 .card{overflow:hidden;margin-bottom:1.25rem}
-.card h2{margin:0;padding:.75rem 1rem;background:linear-gradient(90deg,rgba(47,107,234,.22),rgba(47,107,234,.05));border-bottom:1px solid var(--border);color:#fff;font-size:.74rem;font-weight:500;text-transform:uppercase;letter-spacing:.12em}
+.card h2{margin:0;padding:.75rem 1rem;background:linear-gradient(90deg,var(--primary-soft),transparent);border-bottom:1px solid var(--border);color:var(--text-strong);font-size:.74rem;font-weight:500;text-transform:uppercase;letter-spacing:.12em}
 table{width:100%;border-collapse:collapse}
 th{text-align:left;padding:.55rem .8rem;background:rgba(148,163,184,.05);font-weight:500;font-size:.72rem;text-transform:uppercase;color:var(--muted);letter-spacing:.04em}
 td{padding:.55rem .8rem;border-top:1px solid var(--border);vertical-align:top}

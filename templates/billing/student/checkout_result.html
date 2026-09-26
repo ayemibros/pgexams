@@ -6,7 +6,7 @@
     {% if success %}
       <div class="result-icon ok">{{ icon("check-circle", size=30) }}</div>
       <h1>Payment successful</h1>
-      <p class="auth-sub">You now have access to <b>{{ payment.plan.name }}</b>. Head to your exams to start practising.</p>
+      <p class="auth-sub">You now have access to <b>{{ payment.plan.name }}</b>. Head to your exams to start practicing.</p>
       <a href="{{ url('examhub:exam_list') }}" class="btn btn-primary btn-lg btn-block">Go to my exams</a>
       <p class="auth-alt"><a href="{{ url('examhub:student_dashboard') }}">Back to dashboard</a></p>
     {% else %}

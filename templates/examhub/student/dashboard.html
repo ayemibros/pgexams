@@ -9,7 +9,7 @@
 .hero h2{margin:0 0 .5rem;font-size:clamp(1.6rem,1.2rem + 1.4vw,2.1rem);font-weight:700;letter-spacing:-.02em;color:var(--text)}
 .hero p{margin:0;color:var(--muted);font-size:.9rem}
 .stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.8rem;margin:1.6rem 0 0}
-.stat-card{background:linear-gradient(180deg,rgba(255,255,255,.02),transparent),var(--card);border:1px solid var(--border);border-radius:16px;padding:1.1rem .75rem;text-align:center}
+.stat-card{background:linear-gradient(180deg,var(--sheen),transparent),var(--card);border:1px solid var(--border);border-radius:16px;padding:1.1rem .75rem;text-align:center}
 .stat-card:last-child{border-color:var(--primary-line)}
 .stat-val{font-size:1.45rem;font-weight:700;color:var(--text);line-height:1}
 .stat-lbl{font-size:.76rem;font-weight:400;color:var(--muted);margin-top:.45rem}
@@ -120,6 +120,14 @@
   </div>
 </div>
 {% endif %}
+
+<div class="community-row">
+  <span class="community-row-text"><b>Join the community</b><span>Exam tips, updates and help from other applicants</span></span>
+  <span class="community-row-links">
+    <a href="{{ community.telegram }}" target="_blank" rel="noopener" class="btn btn-outline btn-sm community-tg">{{ icon("telegram", size=15) }} Telegram</a>
+    <a href="{{ community.whatsapp }}" target="_blank" rel="noopener" class="btn btn-outline btn-sm community-wa">{{ icon("whatsapp", size=15) }} WhatsApp</a>
+  </span>
+</div>
 
 <div class="section-lbl">Quick Links</div>
 <div class="school-grid">

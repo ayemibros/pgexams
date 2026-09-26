@@ -7,7 +7,7 @@
     <div class="page-head-sub">{{ attempts|length }} attempt{{ attempts|length|pluralize }}{% if exam_filter %} · <a href="{{ url('examhub:student_results') }}" style="color:var(--primary);font-weight:700">Show all results</a>{% else %} across all your exams. Every sitting is kept, so you can see your progress.{% endif %}</div>
   </div>
   {% if exam_filter %}
-  <div class="page-head-actions"><a href="{{ url('examhub:exam_start', exam_filter.pk) }}" class="btn btn-primary">Practise again</a></div>
+  <div class="page-head-actions"><a href="{{ url('examhub:exam_start', exam_filter.pk) }}" class="btn btn-primary">Practice again</a></div>
   {% endif %}
 </div>
 

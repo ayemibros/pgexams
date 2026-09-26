@@ -41,9 +41,24 @@
     </div>
 
     <p class="support-tip">{{ icon("check-circle", size=16) }}<span>To help us reply faster, include your <b>username</b>. For payment issues, add your <b>payment reference</b> too.</span></p>
-    {% else %}
-    <div class="empty"><b>Support details coming soon</b>We're setting up our support channels. Please check back shortly.</div>
     {% endif %}
+
+    <h2 class="section-title" style="text-align:center">Join the community</h2>
+    <p style="text-align:center;color:var(--muted);max-width:32rem;margin:0 auto 1.25rem">Get exam tips, updates and answers from other applicants.</p>
+    <div class="support-grid">
+      <article class="support-card">
+        <div class="support-icon" style="background:rgba(42,171,238,.12);color:#2aabee">{{ icon("telegram", size=24) }}</div>
+        <div class="support-label">Telegram</div>
+        <div class="support-value">University9ja channel</div>
+        <a href="{{ community.telegram }}" class="btn btn-primary btn-block" target="_blank" rel="noopener">Join on Telegram</a>
+      </article>
+      <article class="support-card">
+        <div class="support-icon wa">{{ icon("whatsapp", size=24) }}</div>
+        <div class="support-label">WhatsApp</div>
+        <div class="support-value">Applicants' group</div>
+        <a href="{{ community.whatsapp }}" class="btn btn-primary btn-block" target="_blank" rel="noopener">Join the WhatsApp group</a>
+      </article>
+    </div>
   </div>
 </main>
 {% endblock %}

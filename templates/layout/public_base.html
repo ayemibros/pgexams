@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500;700&display=swap" rel="stylesheet">
 <meta name="theme-color" content="#080c14">
+{% include "layout/_theme_head.html" %}
 <link rel="stylesheet" href="/static/css/public.css">
 {% block extra_head %}{% endblock %}
 </head>
@@ -34,6 +35,7 @@
       <a href="{{ url('branding:support') }}" {% if page == 'support' %}aria-current="page"{% endif %}>Support</a>
     </nav>
     <div class="nav-actions">
+      {% include "layout/_theme_picker.html" %}
       {% block nav_actions %}
         {% if request.user.is_authenticated %}
           <a href="{{ url('accounts:post_login_redirect') }}" class="btn btn-primary">Dashboard</a>
@@ -68,6 +70,11 @@
         {% if site_settings.contact_email %}<a href="mailto:{{ site_settings.contact_email }}">{{ site_settings.contact_email }}</a>{% endif %}
         {% if site_settings.contact_phone %}<a href="tel:{{ site_settings.contact_phone }}">{{ site_settings.contact_phone }}</a>{% endif %}
       </nav>
+    </div>
+    <div class="foot-community">
+      <span>Join the community:</span>
+      <a href="{{ community.telegram }}" target="_blank" rel="noopener" class="community-link tg">{{ icon("telegram", size=16) }} Telegram</a>
+      <a href="{{ community.whatsapp }}" target="_blank" rel="noopener" class="community-link wa">{{ icon("whatsapp", size=16) }} WhatsApp group</a>
     </div>
     <p class="foot-legal"><strong>Independent service.</strong> {{ site_settings.school_name }} is an exam-preparation platform owned and operated by Telifort Ltd.{% if site_settings.target_institution_name %} It is not affiliated with, endorsed by, or operated by {{ site_settings.target_institution_name }}. {{ site_settings.target_institution_name }}'s name is used only to describe the exams our practice content helps you prepare for.{% endif %} Using this service does not guarantee admission.</p>
   </div>

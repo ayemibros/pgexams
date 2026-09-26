@@ -5,7 +5,7 @@
 <main class="auth-main">
   <div class="auth-card">
     <h1>Welcome back</h1>
-    <p class="auth-sub">Log in to continue practising.</p>
+    <p class="auth-sub">Log in to continue practicing.</p>
     {% if form.errors %}<div class="alert" role="alert">Incorrect username or password.</div>{% endif %}
     <form method="post">
       {{ csrf_input }}

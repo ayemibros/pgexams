@@ -34,6 +34,22 @@
 .start-btn-primary{background:linear-gradient(135deg,var(--primary),var(--primary-2));color:#fff}
 .start-btn-resume{background:linear-gradient(135deg,#f97316,#f59e0b);color:#fff}
 .start-btn-ghost{background:var(--surface2);color:var(--text-2);font-size:.75rem;padding:.625rem 1.125rem}
+.count-pick{margin-top:1.25rem}
+.count-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:.5rem}
+.count-opt{position:relative;display:flex;flex-direction:column;align-items:center;gap:.1rem;padding:.7rem .4rem;border:1px solid var(--border-strong);border-radius:12px;background:var(--surface);cursor:pointer;transition:border-color .15s,background .15s}
+.count-opt input{position:absolute;opacity:0;pointer-events:none}
+.count-opt b{font-size:1.05rem;color:var(--text)}
+.count-opt span{font-size:.7rem;color:var(--muted)}
+.count-opt:has(input:checked){border-color:var(--primary-2);background:var(--primary-soft);box-shadow:0 0 0 3px var(--primary-soft)}
+.count-opt:has(input:focus-visible){outline:2px solid var(--primary-2);outline-offset:2px}
+@media(max-width:560px){
+  .start-hero-head{padding:1.5rem 1.25rem 1.25rem}
+  .start-meta-grid{padding:1.1rem 1.1rem .9rem;gap:.5rem}
+  .start-body{padding:0 1.1rem 1.25rem}
+  .start-cta-row{flex-direction:column;align-items:stretch}
+  .start-cta-row .start-btn{width:100%;justify-content:center}
+  .start-cta-row a{text-align:center}
+}
 </style>
 <div class="start-wrap">
   {% if in_progress %}
@@ -91,20 +107,32 @@
         {% if exam.allow_calculator %}<div class="rule-row"><span class="rule-dot"></span>A built-in calculator is available — click the calculator icon.</div>{% endif %}
         {% if exam.allow_scratch_pad %}<div class="rule-row"><span class="rule-dot"></span>A scratch pad is available for rough work.</div>{% endif %}
         <div class="rule-row"><span class="rule-dot"></span>You can flag questions to revisit before final submission.</div>
+        {% if exam.mode != 'exam' %}<div class="rule-row"><span class="rule-dot"></span>Questions come in a new random order each time; comprehension passages stay together.</div>{% endif %}
       </div>
       {% if not can_start and not in_progress %}
       <div style="background:var(--surface2);border-radius:10px;padding:1rem;text-align:center;margin-top:1.25rem"><div style="font-size:.875rem;font-weight:500;color:var(--muted)">{{ reason }}</div></div>
       {% else %}
+      <form method="post" id="start-form">
+        {{ csrf_input }}
+        {% if not in_progress and count_choices %}
+        <fieldset class="count-pick" style="border:0;padding:0;margin-left:0;margin-right:0">
+          <legend class="rules-title">How many questions?</legend>
+          <div class="count-grid">
+            {% for c in count_choices %}
+            <label class="count-opt"><input type="radio" name="num_questions" value="{{ c.n }}"><b>{{ c.n }}</b>{% if c.minutes %}<span>{{ c.minutes }} min</span>{% endif %}</label>
+            {% endfor %}
+            <label class="count-opt"><input type="radio" name="num_questions" value="" checked><b>All {{ total_questions }}</b>{% if exam.time_limit_minutes %}<span>{{ exam.time_limit_minutes }} min</span>{% endif %}</label>
+          </div>
+        </fieldset>
+        {% endif %}
+      </form>
       <div class="start-cta-row">
-        <form method="post">
-          {{ csrf_input }}
-          {% if in_progress %}
-            <input type="hidden" name="resume" value="1">
-            <button type="submit" class="start-btn start-btn-resume">Resume Exam</button>
-          {% else %}
-            <button type="submit" class="start-btn start-btn-primary">Begin Exam</button>
-          {% endif %}
-        </form>
+        {% if in_progress %}
+          <input type="hidden" name="resume" value="1" form="start-form">
+          <button type="submit" form="start-form" class="start-btn start-btn-resume">Resume Exam</button>
+        {% else %}
+          <button type="submit" form="start-form" class="start-btn start-btn-primary">Begin Exam</button>
+        {% endif %}
         <a href="{{ url(list_url_name) }}" style="font-size:.8125rem;color:var(--muted-2);text-decoration:none;margin-left:.25rem">← Back to {{ list_label }}</a>
       </div>
       {% endif %}

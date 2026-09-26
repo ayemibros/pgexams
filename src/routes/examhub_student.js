@@ -27,6 +27,77 @@ function listNav(exam) {
   return ['examhub:exam_list', 'My Exams'];
 }
 
+// ─────────────────────────────────────────── QUESTION ORDER ──
+// Questions are shuffled within each section on every attempt, except that a
+// comprehension/cloze passage's questions stay together, in their printed
+// order. A student may also choose to answer only some of the questions; the
+// time limit then shrinks in proportion.
+
+const COUNT_CHOICES = [10, 20, 30, 50, 100];
+const PASSAGE_TOPIC = /comprehension|cloze|passage/i;
+const canChooseCount = (exam) => exam.mode !== 'exam' && !exam.is_self_study;
+const scaledMinutes = (minutes, n, total) => Math.max(1, Math.ceil((minutes * n) / total));
+
+/** Leading text of a question after its italic instruction line, to tell passages apart. */
+function passageKey(q) {
+  const text = String(q.eff_stem || '').replace(/^\s*<i>[\s\S]*?<\/i>/, '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  return `${q.eff_topic}|${text.slice(0, 30)}`;
+}
+
+/** Split a section's questions into units: single questions, or a whole passage kept in order. */
+function questionUnits(questions) {
+  const units = [];
+  let prevKey = null;
+  for (const q of questions) {
+    const key = PASSAGE_TOPIC.test(q.eff_topic || '') ? passageKey(q) : null;
+    if (key && key === prevKey) units[units.length - 1].push(q);
+    else units.push([q]);
+    prevKey = key;
+  }
+  return units;
+}
+
+/** The attempt's question list: shuffled units per section, optionally only `limit` questions in total. */
+function buildQuestionOrder(sections, limit = null) {
+  const perSection = sections.map((section) => {
+    let units = shuffle(questionUnits(section.questions));
+    if (section.questions_to_pick > 0) {
+      const kept = [];
+      let n = 0;
+      for (const u of units) { if (n >= section.questions_to_pick) break; kept.push(u); n += u.length; }
+      units = kept;
+    }
+    return units;
+  });
+  if (limit) {
+    // Pick units at random across the exam until the chosen number is reached,
+    // then keep the picked ones in their section (and shuffled) order.
+    const tagged = shuffle(perSection.flatMap((units, s) => units.map((u) => ({ s, u }))));
+    const picked = new Set();
+    let n = 0;
+    for (const t of tagged) {
+      if (n >= limit) break;
+      if (n + t.u.length > limit && t.u.length > 1) continue; // a passage that doesn't fit is skipped
+      picked.add(t.u);
+      n += t.u.length;
+    }
+    return perSection.flatMap((units) => units.filter((u) => picked.has(u)).flat());
+  }
+  return perSection.flat(2);
+}
+
+/** Time limit for this attempt in seconds (scaled when fewer questions were chosen), or null. */
+async function attemptTimeLimit(attempt, exam) {
+  if (!exam.time_limit_minutes) return null;
+  const chosen = (attempt.question_order || []).length;
+  if (exam.is_self_study) return exam.time_limit_minutes * 60;
+  const total = Number(await db.value(
+    'SELECT COUNT(*) FROM examhub_examquestion q JOIN examhub_examsection s ON s.id = q.section_id WHERE s.exam_id = ?', [exam.id],
+  ));
+  if (!total || chosen >= total) return exam.time_limit_minutes * 60;
+  return scaledMinutes(exam.time_limit_minutes, chosen, total) * 60;
+}
+
 // ─────────────────────────────────────────── FREE TRIAL ──
 // Every applicant can try one short practice test before paying: TRIAL_SIZE
 // questions drawn from the published exams (the EPT first), with instant
@@ -314,13 +385,10 @@ route(router, 'examhub:exam_start', async (req, res, { pk }) => {
       messages.error(req, reason);
       return redirect(res, listUrlName);
     }
-    const all = [];
-    for (const section of await X.examSectionsWithQuestions(exam.id)) {
-      let qs = [...section.questions];
-      if (section.randomize_questions) shuffle(qs);
-      if (section.questions_to_pick > 0) qs = qs.slice(0, section.questions_to_pick);
-      all.push(...qs);
-    }
+    const sections = await X.examSectionsWithQuestions(exam.id);
+    const available = sections.reduce((s, sec) => s + (sec.questions_to_pick > 0 ? Math.min(sec.questions_to_pick, sec.questions.length) : sec.questions.length), 0);
+    const chosen = canChooseCount(exam) ? intOrNull(req.POST.get('num_questions')) : null;
+    const all = buildQuestionOrder(sections, chosen && chosen > 0 && chosen < available ? chosen : null);
     if (!all.length) {
       messages.error(req, 'This exam has no questions yet. Please check back later.');
       return redirect(res, listUrlName);
@@ -333,9 +401,12 @@ route(router, 'examhub:exam_start', async (req, res, { pk }) => {
   }
 
   const sections = await X.examSectionsWithQuestions(exam.id);
+  const totalQuestions = sections.reduce((s, sec) => s + (sec.questions_to_pick > 0 ? sec.questions_to_pick : sec.question_count), 0);
+  const countChoices = canChooseCount(exam)
+    ? COUNT_CHOICES.filter((n) => n < totalQuestions).map((n) => ({ n, minutes: exam.time_limit_minutes ? scaledMinutes(exam.time_limit_minutes, n, totalQuestions) : null }))
+    : [];
   return render(req, res, 'examhub/student/start.html', {
-    active: 'exams', exam, sections,
-    total_questions: sections.reduce((s, sec) => s + (sec.questions_to_pick > 0 ? sec.questions_to_pick : sec.question_count), 0),
+    active: 'exams', exam, sections, total_questions: totalQuestions, count_choices: countChoices,
     total_marks: await X.examTotalMarks(exam.id), can_start: canStart, reason, in_progress: inProgress,
     list_url_name: listUrlName, list_label: listLabel,
   });
@@ -481,8 +552,9 @@ route(router, 'examhub:exam_take', async (req, res, { attempt_pk }) => {
 
   const answers = new Map(AttemptAnswer.hydrateAll(await db.all('SELECT * FROM examhub_attemptanswer WHERE attempt_id = ?', [attempt.id])).map((a) => [a.exam_question_id, a]));
   let timeRemaining = null;
-  if (exam.time_limit_minutes) {
-    timeRemaining = Math.max(0, exam.time_limit_minutes * 60 - Math.trunc((Date.now() - attempt.started_at.getTime()) / 1000));
+  const limitSeconds = await attemptTimeLimit(attempt, exam);
+  if (limitSeconds) {
+    timeRemaining = Math.max(0, limitSeconds - Math.trunc((Date.now() - attempt.started_at.getTime()) / 1000));
   }
 
   // Everything here is visible in the page source, so it must never carry the
@@ -547,9 +619,11 @@ function applyAnswer(aa, type, value, forSubmit = false) {
   }
 }
 
-async function examQuestionFor(examId, qPk) {
+/** An exam question by id, but only if it is part of this attempt's question list. */
+async function examQuestionFor(attempt, qPk) {
   const id = intOrNull(qPk);
-  if (id === null) return null;
+  if (id === null || !(attempt.question_order || []).map(Number).includes(id)) return null;
+  const examId = attempt.exam_id;
   const rows = await db.all('SELECT q.* FROM examhub_examquestion q JOIN examhub_examsection s ON s.id = q.section_id WHERE q.id = ? AND s.exam_id = ?', [id, examId]);
   return rows.length ? (await X.hydrateExamQuestions(rows))[0] : null;
 }
@@ -559,7 +633,7 @@ route(router, 'examhub:save_answer', async (req, res, { attempt_pk }) => {
   const attempt = await studentAttempt(req, attempt_pk);
   const [data, bad] = parseJsonBody(req);
   if (bad || data === null || typeof data !== 'object') return jsonResponse(res, { ok: false, error: 'Invalid JSON' }, 400);
-  const eq = await examQuestionFor(attempt.exam_id, data.question_pk);
+  const eq = await examQuestionFor(attempt, data.question_pk);
   if (!eq) return jsonResponse(res, { ok: false, error: 'Question not found' }, 404);
 
   const aa = await X.getOrCreateAnswer(attempt.id, eq.id);
@@ -580,7 +654,7 @@ route(router, 'examhub:flag', async (req, res, { attempt_pk }) => {
   const attempt = await studentAttempt(req, attempt_pk);
   const [data, bad] = parseJsonBody(req);
   if (bad || data === null || typeof data !== 'object') return jsonResponse(res, { ok: false }, 400);
-  const eq = await examQuestionFor(attempt.exam_id, data.question_pk);
+  const eq = await examQuestionFor(attempt, data.question_pk);
   if (!eq) return jsonResponse(res, { ok: false }, 404);
   const aa = await X.getOrCreateAnswer(attempt.id, eq.id);
   await db.update('examhub_attemptanswer', aa.id, { flagged: !aa.flagged });
@@ -606,9 +680,9 @@ route(router, 'examhub:track_fullscreen', async (req, res, { attempt_pk }) => {
 route(router, 'examhub:check_timeout', async (req, res, { attempt_pk }) => {
   const attempt = await studentAttempt(req, attempt_pk, false);
   if (attempt.status !== 'in_progress') return jsonResponse(res, { timed_out: false, already_done: true });
-  if (!attempt.exam.time_limit_minutes) return jsonResponse(res, { timed_out: false });
+  const limit = await attemptTimeLimit(attempt, attempt.exam);
+  if (!limit) return jsonResponse(res, { timed_out: false });
   const elapsed = (Date.now() - attempt.started_at.getTime()) / 1000;
-  const limit = attempt.exam.time_limit_minutes * 60;
   if (elapsed >= limit) {
     await db.update('examhub_examattempt', attempt.id, { status: 'timed_out', completed_at: new Date(), time_taken_seconds: Math.trunc(elapsed) });
     return jsonResponse(res, { timed_out: true, redirect: reverse('examhub:exam_results', attempt.id) });
@@ -624,7 +698,7 @@ route(router, 'examhub:submit', async (req, res, { attempt_pk }) => {
   const finalAnswers = data && typeof data === 'object' && data.answers && typeof data.answers === 'object' ? data.answers : {};
 
   for (const [qPkStr, ans] of Object.entries(finalAnswers)) {
-    const eq = await examQuestionFor(exam.id, qPkStr);
+    const eq = await examQuestionFor(attempt, qPkStr);
     if (!eq || !ans || typeof ans !== 'object') continue;
     const aa = await X.getOrCreateAnswer(attempt.id, eq.id);
     applyAnswer(aa, ans.type, ans.value, true);
@@ -632,11 +706,16 @@ route(router, 'examhub:submit', async (req, res, { attempt_pk }) => {
   }
 
   let totalEarned = 0;
-  let maxScore = 0;
+  // Out of every question in the attempt: unanswered questions score zero
+  // (summing only the answered ones let 1 right answer out of 150 score 100%).
+  const orderIds = (attempt.question_order || []).map(Number);
+  const maxScore = orderIds.length
+    ? Number(await db.value('SELECT COALESCE(SUM(points), 0) FROM examhub_examquestion WHERE id IN (?)', [orderIds]))
+    : 0;
   for (const aa of await X.attemptAnswers(attempt.id)) {
     const eq = aa.exam_question;
+    if (!orderIds.includes(Number(eq.id))) continue;
     const points = Number(eq.points);
-    maxScore += points;
     if (eq.eff_type === 'theory') {
       const keywords = eq.eff_keywords || [];
       const text = String(aa.text_answer || '').toLowerCase();

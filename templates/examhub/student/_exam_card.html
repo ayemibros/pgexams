@@ -37,7 +37,7 @@
       <a href="{{ url('examhub:exam_take', item.in_progress.pk) }}" class="cbt-btn cbt-btn-resume">Resume</a>
       <span class="status-badge sb-progress"><span class="sb-pulse"></span>In Progress</span>
     {% elif item.can_attempt %}
-      <a href="{{ url('examhub:exam_start', exam.pk) }}" class="cbt-btn cbt-btn-primary">{% if item.attempt_count %}Practise again{% else %}Start{% endif %}</a>
+      <a href="{{ url('examhub:exam_start', exam.pk) }}" class="cbt-btn cbt-btn-primary">{% if item.attempt_count %}Practice again{% else %}Start{% endif %}</a>
       {% if item.attempt_count %}<a href="{{ url('examhub:student_results') }}?exam={{ exam.pk }}" class="cbt-btn cbt-btn-outline">History</a>{% endif %}
     {% else %}
       {% if item.attempt_count %}<a href="{{ url('examhub:student_results') }}?exam={{ exam.pk }}" class="cbt-btn cbt-btn-outline">History</a>{% endif %}

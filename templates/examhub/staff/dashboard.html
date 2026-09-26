@@ -2,8 +2,8 @@
 {% block page_title %}Dashboard{% endblock %}
 {% block content %}
 <style>
-.hero-pro{background:linear-gradient(135deg,var(--card-2),var(--card));border-radius:16px;padding:1.5rem 1.75rem;color:#fff;margin-bottom:1.5rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;position:relative;overflow:hidden}
-.hero-pro::after{content:'';position:absolute;right:-60px;top:-60px;width:220px;height:220px;border-radius:50%;background:rgba(255,255,255,.06)}
+.hero-pro{background:linear-gradient(135deg,var(--card-2),var(--card));border-radius:16px;padding:1.5rem 1.75rem;color:var(--text-strong);border:1px solid var(--border);margin-bottom:1.5rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;position:relative;overflow:hidden}
+.hero-pro::after{content:'';position:absolute;right:-60px;top:-60px;width:220px;height:220px;border-radius:50%;background:var(--primary-soft)}
 .hero-pro h2{margin:0 0 .3rem;font-size:1.2rem;position:relative}
 .hero-pro p{margin:0;opacity:.7;font-size:.8125rem;position:relative}
 .row-card{display:flex;justify-content:space-between;align-items:center;padding:.9rem 1.1rem;border-top:1px solid var(--border);gap:.75rem}
@@ -25,8 +25,8 @@
   </div>
   <div class="page-head-actions">
     <a href="{{ url('examhub:exam_add') }}" class="btn btn-primary">+ New Exam</a>
-    <a href="{{ url('examhub:bulk_upload_start') }}" class="btn btn-outline" style="background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.2);color:#fff">{{ icon("upload", css_class="ico") }} Bulk Upload Questions</a>
-    <a href="{{ url('examhub:bank_add') }}" class="btn btn-outline" style="background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.2);color:#fff">+ New Bank</a>
+    <a href="{{ url('examhub:bulk_upload_start') }}" class="btn btn-outline">{{ icon("upload", css_class="ico") }} Bulk Upload Questions</a>
+    <a href="{{ url('examhub:bank_add') }}" class="btn btn-outline">+ New Bank</a>
   </div>
 </div>
 
