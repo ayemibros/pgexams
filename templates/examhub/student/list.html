@@ -83,7 +83,10 @@
   <div style="font-size:2.25rem">{{ icon("academic-cap", css_class="ico") }}</div>
   <h2>Subscribe to unlock your exams</h2>
   <p>Your subscription gives you{% if site_settings.shared_exam_short_name %} the {{ site_settings.shared_exam_name|default(site_settings.shared_exam_short_name) }} and{% endif %} your department's exams, every year, with unlimited practice. Each attempt is tracked so you can watch your scores improve.</p>
-  <a href="{{ url('billing:plans_browse') }}" class="btn btn-primary">Subscribe Now!</a>
+  <div style="display:flex;gap:.6rem;justify-content:center;flex-wrap:wrap">
+    <a href="{{ url('billing:plans_browse') }}" class="btn btn-primary">Subscribe Now!</a>
+    {% if trial.state != 'used' %}<a href="{{ url('examhub:free_trial') }}" class="btn btn-outline">{% if trial.state == 'in_progress' %}Continue free trial{% else %}Try 10 questions free{% endif %}</a>{% endif %}
+  </div>
 </div>
 {% endif %}
 

@@ -26,7 +26,11 @@
       <input type="hidden" name="next" value="{{ next }}">
       <button type="submit" class="btn btn-primary btn-lg btn-block">Log in</button>
     </form>
-    <p class="auth-alt">New applicant? <a href="{% if next %}{{ next }}{% else %}{{ url('billing:plans_browse') }}{% endif %}">Subscribe to get started</a></p>
+    {% if next %}
+    <p class="auth-alt">New applicant? <a href="{{ next }}">Subscribe to get started</a></p>
+    {% else %}
+    <p class="auth-alt">New applicant? <a href="{{ url('accounts:register') }}">Try 10 questions free</a> or <a href="{{ url('billing:plans_browse') }}">subscribe</a></p>
+    {% endif %}
   </div>
 </main>
 {% endblock %}

@@ -60,10 +60,18 @@
     {% if not access_has_any %}
     <a href="{{ url('billing:plans_browse') }}" class="highlight-card">
       <span class="highlight-card-icon">{{ icon("key", size=20) }}</span>
-      <span><b>Activate your access</b><span>Subscribe to unlock{% if site_settings.shared_exam_short_name %} the {{ site_settings.shared_exam_short_name }} and{% endif %} your department's exams, with unlimited practice</span></span>
+      <span><b>Activate your access</b><span>{% if trial.state == 'used' %}You've used your free trial. {% endif %}Subscribe to unlock{% if site_settings.shared_exam_short_name %} the {{ site_settings.shared_exam_short_name }} and{% endif %} your department's exams, with unlimited practice</span></span>
     </a>
     {% endif %}
+    {% if access_has_any %}
     <a href="{{ url('examhub:exam_list') }}" class="btn btn-primary btn-lg">Start Practice</a>
+    {% elif trial.state == 'none' %}
+    <a href="{{ url('examhub:free_trial') }}" class="btn btn-primary btn-lg">Start Free Trial — 10 questions</a>
+    {% elif trial.state == 'in_progress' %}
+    <a href="{{ url('examhub:free_trial') }}" class="btn btn-primary btn-lg">Continue your free trial</a>
+    {% else %}
+    <a href="{{ url('billing:plans_browse') }}" class="btn btn-primary btn-lg">Subscribe to unlock all questions</a>
+    {% endif %}
   </div>
 </div>
 

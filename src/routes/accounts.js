@@ -74,17 +74,13 @@ function subscribeNext(req) {
 const EMAIL_RE = /^[^\s@"(),:;<>[\\\]]+@(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,63}$/;
 
 /**
- * Self-registration, reached from the subscribe page (opening it directly
- * sends applicants to choose their programme first). Full name, email,
- * password — the email doubles as the username.
+ * Self-registration: free, from the home page ("Try free"), or from the
+ * subscribe page on the way to paying. Full name, email, password — the
+ * email doubles as the username. New applicants land on the free trial
+ * unless they came from the subscribe page.
  */
 route(router, 'accounts:register', async (req, res) => {
   if (req.user.is_authenticated) return res.redirect(302, safeNext(req.POST.get('next') || req.GET.get('next')) || reverse('accounts:post_login_redirect'));
-
-  if (req.method === 'GET' && !subscribeNext(req)) {
-    messages.info(req, "Choose the programme you're applying to first. You'll create your account when you subscribe.");
-    return redirect(res, 'billing:plans_browse');
-  }
 
   if (req.method === 'POST') {
     const fullName = String(req.POST.get('full_name', '')).split(/\s+/).filter(Boolean).join(' ');
@@ -116,7 +112,7 @@ route(router, 'accounts:register', async (req, res) => {
       }, password);
       await loginUser(req, user);
       messages.success(req, `Welcome, ${user.first_name}! Your account is ready.`);
-      return res.redirect(302, safeNext(req.POST.get('next') || req.GET.get('next')) || reverse('accounts:post_login_redirect'));
+      return res.redirect(302, safeNext(req.POST.get('next') || req.GET.get('next')) || reverse('examhub:free_trial'));
     }
     for (const e of errors) messages.error(req, e);
   }
@@ -124,6 +120,7 @@ route(router, 'accounts:register', async (req, res) => {
   return render(req, res, 'registration/register.html', {
     form_data: req.method === 'POST' ? req.POST.toObject() : {},
     next: safeNext(req.POST.get('next') || req.GET.get('next') || '') || '',
+    from_subscribe: Boolean(subscribeNext(req)),
   });
 });
 

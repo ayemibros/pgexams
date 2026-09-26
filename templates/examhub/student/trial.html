@@ -1,0 +1,50 @@
+{% extends "layout/student_shell.html" %}
+{% block page_title %}Free Trial{% endblock %}
+{% block content %}
+<style>
+.trial-card{max-width:560px;margin:1.5rem auto;background:linear-gradient(180deg,rgba(255,255,255,.02),transparent),var(--card);border:1px solid var(--border);border-radius:20px;padding:2rem;text-align:center}
+.trial-icon{width:64px;height:64px;border-radius:50%;margin:0 auto 1.1rem;display:flex;align-items:center;justify-content:center;background:var(--primary-soft);color:var(--primary-text);box-shadow:inset 0 0 0 1px var(--primary-line)}
+.trial-icon.done{background:var(--amber-soft);color:var(--amber);box-shadow:inset 0 0 0 1px var(--amber-line)}
+.trial-card h2{margin:0 0 .5rem;font-size:1.45rem;font-weight:700;letter-spacing:-.01em}
+.trial-card p{margin:0 auto;color:var(--muted);font-size:.92rem;max-width:420px;line-height:1.6}
+.trial-facts{display:grid;grid-template-columns:repeat(3,1fr);gap:.7rem;margin:1.5rem 0}
+.trial-fact{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:.9rem .5rem}
+.trial-fact b{display:block;font-size:1.25rem;font-weight:700;color:var(--text)}
+.trial-fact span{font-size:.74rem;color:var(--muted)}
+.trial-actions{display:flex;flex-direction:column;gap:.7rem;margin-top:1.5rem}
+.trial-actions form{margin:0}
+.trial-note{font-size:.76rem;color:var(--muted-2);margin-top:1rem}
+</style>
+
+<div class="trial-card">
+  {% if has_access %}
+    <div class="trial-icon">{{ icon("check-circle", size=28) }}</div>
+    <h2>You have full access</h2>
+    <p>Your subscription already covers your exams, so there's no need for the free trial.</p>
+    <div class="trial-actions"><a href="{{ url('examhub:exam_list') }}" class="btn btn-primary btn-lg">Go to My Exams</a></div>
+  {% elif trial.state == 'used' %}
+    <div class="trial-icon done">{{ icon("key", size=28) }}</div>
+    <h2>You've used your free trial</h2>
+    <p>Subscribe to unlock every question{% if site_settings.shared_exam_short_name %} in the {{ site_settings.shared_exam_short_name }}{% endif %} and your department's past questions, with unlimited practice and full results.</p>
+    <div class="trial-actions">
+      <a href="{{ url('billing:plans_browse') }}" class="btn btn-primary btn-lg">Subscribe for full access</a>
+      <a href="{{ url('examhub:exam_results', trial.attempt_id) }}" class="btn btn-outline">See your trial results</a>
+    </div>
+  {% else %}
+    <div class="trial-icon">{{ icon("sparkles", size=28) }}</div>
+    <div class="eyebrow" style="margin-bottom:.4rem">Free trial · no payment</div>
+    <h2>Try {{ trial_size }} questions free</h2>
+    <p>See exactly how the CBT works: the real exam screen, a timer, instant feedback on every answer and a score report at the end.</p>
+    <div class="trial-facts">
+      <div class="trial-fact"><b>{{ trial_size }}</b><span>Questions</span></div>
+      <div class="trial-fact"><b>{{ trial_minutes }}</b><span>Minutes</span></div>
+      <div class="trial-fact"><b>1</b><span>Free attempt</span></div>
+    </div>
+    <div class="trial-actions">
+      <form method="post">{{ csrf_input }}<button type="submit" class="btn btn-primary btn-lg btn-block">Start free trial</button></form>
+      <a href="{{ url('billing:plans_browse') }}" class="btn btn-ghost">Skip — subscribe for full access</a>
+    </div>
+    <div class="trial-note">The trial can be taken once. If you leave part-way, you can come back and continue.</div>
+  {% endif %}
+</div>
+{% endblock %}

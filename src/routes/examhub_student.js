@@ -27,6 +27,51 @@ function listNav(exam) {
   return ['examhub:exam_list', 'My Exams'];
 }
 
+// ─────────────────────────────────────────── FREE TRIAL ──
+// Every applicant can try one short practice test before paying: TRIAL_SIZE
+// questions drawn from the published exams (the EPT first), with instant
+// feedback. It is a private self-study exam, so it needs no subscription, and
+// it allows one attempt only.
+
+const TRIAL_TITLE = 'Free Trial — 10 questions';
+const TRIAL_SIZE = 10;
+const TRIAL_MINUTES = 15;
+const isTrialExam = (exam) => Boolean(exam && exam.is_self_study && exam.title === TRIAL_TITLE);
+
+/** { state: 'none' | 'in_progress' | 'used', attempt_id } for the student's free trial. */
+async function trialState(user) {
+  const att = await db.one(
+    `SELECT a.id, a.status FROM examhub_examattempt a JOIN examhub_exam e ON e.id = a.exam_id
+     WHERE a.student_id = ? AND e.owner_id = ? AND e.is_self_study = 1 AND e.title = ? ORDER BY a.id DESC LIMIT 1`,
+    [user.id, user.id, TRIAL_TITLE],
+  );
+  if (!att) return { state: 'none', attempt_id: null };
+  return { state: att.status === 'in_progress' ? 'in_progress' : 'used', attempt_id: att.id };
+}
+
+/** Auto-marked bank questions used in published exams: EPT ones when there are enough, otherwise all. */
+async function trialQuestionPool() {
+  const rows = await db.all(
+    `SELECT DISTINCT q.id, (e.is_ept = 1 AND e.bundle_id IS NULL) AS ept
+     FROM examhub_examquestion eq JOIN examhub_examsection s ON s.id = eq.section_id JOIN examhub_exam e ON e.id = s.exam_id
+     JOIN examhub_question q ON q.id = eq.bank_question_id
+     WHERE e.is_published = 1 AND e.is_self_study = 0 AND q.question_type <> 'theory'`,
+  );
+  const ept = [...new Set(rows.filter((r) => Number(r.ept)).map((r) => r.id))];
+  return ept.length >= TRIAL_SIZE ? ept : [...new Set(rows.map((r) => r.id))];
+}
+
+/** Bank question ids from the published exams this student's subscription covers. */
+async function allowedQuestionIds(profile) {
+  const exams = (await publishedExams()).filter((e) => profile.allows(e.subject, e.bundle, e.counts_as_ept));
+  if (!exams.length) return [];
+  const rows = await db.all(
+    `SELECT DISTINCT eq.bank_question_id AS id FROM examhub_examquestion eq JOIN examhub_examsection s ON s.id = eq.section_id
+     WHERE s.exam_id IN (?) AND eq.bank_question_id IS NOT NULL`, [exams.map((e) => e.id)],
+  );
+  return rows.map((r) => r.id);
+}
+
 async function publishedExams(extraWhere = '', params = []) {
   const rows = await db.all(`SELECT * FROM examhub_exam WHERE is_published = 1 AND is_self_study = 0 ${extraWhere} ORDER BY created_at DESC`, params);
   return X.attachSubjectBundle(Exam.hydrateAll(rows));
@@ -131,6 +176,7 @@ route(router, 'examhub:student_dashboard', async (req, res) => {
   const live = await liveSchoolItems(user);
   return render(req, res, 'examhub/student/dashboard.html', {
     active: 'dashboard',
+    trial: await trialState(user),
     upcoming_count: upcomingCount,
     attempts,
     total_attempts: Number(stats.total) || 0,
@@ -218,7 +264,7 @@ route(router, 'examhub:exam_list', async (req, res) => {
   const programmeSections = [...programmes.values()].sort((a, b) => a.bundle.name.toLowerCase().localeCompare(b.bundle.name.toLowerCase()));
 
   return render(req, res, 'examhub/student/list.html', {
-    active: 'exams', ept_items: eptItems, ept_allowed: profile.allows(null, null, true),
+    active: 'exams', trial: await trialState(user), ept_items: eptItems, ept_allowed: profile.allows(null, null, true),
     programme_sections: programmeSections, other_items: otherItems, exam_total: exams.length,
     ...(await accessSummary(user, profile)),
   });
@@ -295,11 +341,56 @@ route(router, 'examhub:exam_start', async (req, res, { pk }) => {
   });
 }, { login: true });
 
+route(router, 'examhub:free_trial', async (req, res) => {
+  if (!isStudent(req)) return denied(req, res);
+  const { user } = req;
+  const trial = await trialState(user);
+  if (trial.state === 'in_progress') return redirect(res, 'examhub:exam_take', trial.attempt_id);
+  const profile = await AccessProfile.load(user);
+
+  if (req.method === 'POST' && trial.state === 'none' && !profile.has_any) {
+    const pool = await trialQuestionPool();
+    if (pool.length) {
+      const picked = shuffle(pool).slice(0, TRIAL_SIZE);
+      const questions = shuffle(Question.hydrateAll(await db.all('SELECT * FROM examhub_question WHERE id IN (?)', [picked])));
+      const attemptId = await db.transaction(async (tx) => {
+        const examId = await X.createExam({
+          title: TRIAL_TITLE, mode: 'practice', time_limit_minutes: TRIAL_MINUTES, pass_score: 50, max_attempts: 1,
+          instructions: 'Free trial: answer each question to see instantly whether you were right.',
+          require_fullscreen: false, detect_tab_switch: false, allow_calculator: false, allow_scratch_pad: true,
+          is_published: true, is_self_study: true, owner_id: user.id, created_by_id: user.id,
+        }, tx);
+        const sectionId = await X.createSection({ exam_id: examId, title: 'Free Trial', order: 0 }, tx);
+        const eqIds = [];
+        let max = 0;
+        for (let i = 0; i < questions.length; i++) {
+          eqIds.push(await X.createExamQuestion({ section_id: sectionId, bank_question_id: questions[i].id, order: i, points: questions[i].default_points }, tx));
+          max += Number(questions[i].default_points);
+        }
+        return X.createAttempt({ exam_id: examId, student_id: user.id, question_order: eqIds, mode: 'practice', max_score: round2(max) }, tx);
+      });
+      return redirect(res, 'examhub:exam_take', attemptId);
+    }
+    messages.error(req, "The free trial isn't available right now — please try again a little later.");
+  }
+
+  return render(req, res, 'examhub/student/trial.html', {
+    active: 'dashboard', trial, has_access: profile.has_any, trial_size: TRIAL_SIZE, trial_minutes: TRIAL_MINUTES,
+  });
+});
+
 // ─────────────────────────────────────────── SELF-STUDY PRACTICE ──
 
 route(router, 'examhub:practice_setup', async (req, res) => {
   if (!isStudent(req)) return denied(req, res);
   const { user } = req;
+  // Custom practice is part of full access: only questions from exams the subscription covers.
+  const profile = await AccessProfile.load(user);
+  if (!profile.has_any) {
+    messages.info(req, 'Practice mode comes with a subscription. Try the free 10-question trial first.');
+    return redirect(res, 'examhub:free_trial');
+  }
+  const allowedIds = await allowedQuestionIds(profile);
   const subjects = Subject.hydrateAll(await db.all('SELECT * FROM catalog_subject WHERE is_active = 1 ORDER BY name'));
   let error = null;
 
@@ -311,8 +402,8 @@ route(router, 'examhub:practice_setup', async (req, res) => {
     const numQ = Math.max(1, Math.min(Number.isNaN(n) ? 20 : n, 100));
     const timed = req.POST.get('timed') === '1';
 
-    const where = ['1 = 1'];
-    const params = [];
+    const where = ['q.id IN (?)'];
+    const params = [allowedIds.length ? allowedIds : [-1]];
     if (subjectId) { where.push('b.subject_id = ?'); params.push(subjectId); }
     if (topic) { where.push("(q.topic LIKE ? ESCAPE '\\\\' OR q.subtopic LIKE ? ESCAPE '\\\\')"); params.push(contains(topic), contains(topic)); }
     if (difficulty) { where.push('q.difficulty = ?'); params.push(difficulty); }
@@ -394,18 +485,21 @@ route(router, 'examhub:exam_take', async (req, res, { attempt_pk }) => {
     timeRemaining = Math.max(0, exam.time_limit_minutes * 60 - Math.trunc((Date.now() - attempt.started_at.getTime()) / 1000));
   }
 
+  // Everything here is visible in the page source, so it must never carry the
+  // answers: no is_correct flags, true/false key, blank answers or explanations
+  // (practice feedback comes from the server after each answer is saved).
   const questionsJson = ordered.map((q, i) => {
     const aa = answers.get(q.id);
     const data = {
       pk: q.id, index: i + 1, type: q.eff_type, stem: q.eff_stem, stem_image: q.eff_stem_image_url || null,
-      points: Number(q.points), section_pk: q.section_id, section_title: q.section.title, explanation: q.eff_explanation,
+      points: Number(q.points), section_pk: q.section_id, section_title: q.section.title,
       flagged: aa ? aa.flagged : false,
       answered: Boolean(aa) && (pyTruthy(aa.selected_indices) || pyTruthy(aa.text_answer) || aa.numeric_answer !== null || pyTruthy(aa.answer_data)),
     };
     const qt = q.eff_type;
-    if (qt === 'mcq_single' || qt === 'mcq_multi') data.choices = q.eff_choices_data;
-    else if (qt === 'true_false') data.tf_answer = q.eff_tf_answer;
-    else if (qt === 'fill_blank') data.blank_answers = q.eff_blank_answers;
+    if (qt === 'mcq_single' || qt === 'mcq_multi') {
+      data.choices = (q.eff_choices_data || []).map(({ is_correct: _hidden, ...choice }) => choice);
+    } else if (qt === 'fill_blank') data.blank_answers = (q.eff_blank_answers || []).map(() => ''); // only how many blanks
     else if (qt === 'numeric') { data.numeric_unit = q.eff_numeric_unit; data.numeric_tolerance = Number(q.eff_numeric_tolerance || 0); }
     else if (qt === 'theory') data.model_answer = '';
     else if (qt === 'match') { data.match_left = q.eff_match_left; data.match_right = q.eff_match_right; }
@@ -612,6 +706,8 @@ route(router, 'examhub:exam_results', async (req, res, { attempt_pk }) => {
     skipped_count: Math.max(0, (attempt.question_order || []).length - answers.length),
     elapsed_fmt: elapsedFmt, topic_stats: [...topicStats], section_stats: [...sectionStats],
     show_review: exam.mode !== 'exam', list_url_name: listUrlName, list_label: listLabel,
+    is_trial: isTrialExam(exam), trial_size: TRIAL_SIZE,
+    has_access: isTrialExam(exam) ? (await AccessProfile.load(req.user)).has_any : true,
   });
 }, { login: true });
 

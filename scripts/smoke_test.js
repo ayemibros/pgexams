@@ -7,6 +7,7 @@
 const crypto = require('crypto');
 const db = require('../src/db');
 const accounts = require('../src/services/accounts');
+const X = require('../src/services/exams');
 
 const BASE = process.argv[2] || 'http://127.0.0.1:8000';
 const TAG = `smoke${crypto.randomBytes(3).toString('hex')}`;
@@ -77,7 +78,7 @@ async function main() {
     const sub = await page(anon, '/subscribe/', 'Subscribe', 'subscribe page (anonymous)');
     await page(anon, '/accounts/login/', 'Welcome back', 'login page');
     const reg0 = await anon.get('/accounts/register/');
-    reg0.status === 302 && reg0.location === '/subscribe/' ? ok('register without next -> subscribe') : bad(`register -> ${reg0.status} ${reg0.location}`);
+    reg0.status === 200 && reg0.text.includes('Try it free') ? ok('free sign-up page opens directly') : bad(`register -> ${reg0.status} ${reg0.location}`);
     const r404 = await anon.get('/nope/x/');
     r404.status === 404 ? ok('404') : bad(`404 -> ${r404.status}`);
     const rc = await anon.req('POST', '/accounts/login/', { form: { username: 'x', password: 'y' } });
@@ -143,8 +144,12 @@ async function main() {
         const take = await page(s, `/attempt/${aid}/take/`, 'exam-data', 'take page');
         const ed = JSON.parse(/<script id="exam-data" type="application\/json">([\s\S]*?)<\/script>/.exec(take.text)[1]);
         const answers = {};
-        for (const q of ed.questions) {
-          if (q.type === 'mcq_single') answers[q.pk] = { type: 'choice', value: [Math.max(0, (q.choices || []).findIndex((c) => c.is_correct))] };
+        const leaked = ed.questions.some((q) => (q.choices || []).some((c) => 'is_correct' in c) || 'tf_answer' in q || 'explanation' in q);
+        leaked ? bad('take page exposes the answer key in the page source') : ok('answer key not in page source');
+        // The page no longer carries the key, so look up the right answers directly.
+        const keyed = await X.hydrateExamQuestions(await db.all('SELECT * FROM examhub_examquestion WHERE id IN (?)', [ed.questions.map((q) => q.pk)]));
+        for (const q of keyed) {
+          if (q.eff_type === 'mcq_single') answers[q.id] = { type: 'choice', value: [Math.max(0, (q.eff_choices_data || []).findIndex((c) => c.is_correct))] };
         }
         const first = ed.questions[0];
         const sv = await s.req('POST', `/attempt/${aid}/save/`, { json: { question_pk: first.pk, ...(answers[first.pk] || { type: 'text', value: 'x' }) } });
@@ -159,7 +164,12 @@ async function main() {
         await page(s, `/results/?exam=${examId}`, 'Practise again', 'results filtered by exam');
       } else bad(`start -> ${st.status} ${st.location}`);
     } else bad('no exam visible after subscribing');
-    await page(s, '/practice/', 'Practice', 'practice setup');
+    const subscribed = await db.one("SELECT id FROM billing_subscription WHERE student_id = ? AND status = 'active'", [applicant.id]);
+    if (subscribed) await page(s, '/practice/', 'Practice', 'practice setup (subscribed)');
+    else {
+      const pr = await s.get('/practice/');
+      pr.status === 302 && pr.location === '/trial/' ? ok('practice setup -> free trial (no subscription)') : bad(`practice setup unsubscribed -> ${pr.status} ${pr.location}`);
+    }
     const locked = await s.get('/staff/');
     locked.status === 302 ? ok('student blocked from staff area') : bad(`student /staff/ -> ${locked.status}`);
 

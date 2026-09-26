@@ -41,6 +41,14 @@
 .res-btn-outline{background:var(--card);color:var(--text-2);border:1.5px solid var(--border)}
 </style>
 
+{% if is_trial and not has_access %}
+<a href="{{ url('billing:plans_browse') }}" class="highlight-card" style="margin-bottom:1.25rem">
+  <span class="highlight-card-icon">{{ icon("key", size=20) }}</span>
+  <span style="flex:1"><b>That was your free {{ trial_size }}-question trial</b><span>Subscribe to unlock every question{% if site_settings.shared_exam_short_name %} in the {{ site_settings.shared_exam_short_name }}{% endif %} and your department's past questions, with unlimited practice.</span></span>
+  <span class="btn btn-primary btn-sm">Subscribe</span>
+</a>
+{% endif %}
+
 <div class="res-hero">
   <div class="res-hero-banner {% if attempt.passed %}passed{% elif attempt.score_pct >= 50 %}partial{% else %}failed{% endif %}">
     <div class="res-ring-wrap">

@@ -6,8 +6,13 @@
 {% block content %}
 <main class="auth-main">
   <div class="auth-card">
+    {% if from_subscribe %}
     <h1>Create your account</h1>
     <p class="auth-sub">Almost there. Create your account to finish subscribing.</p>
+    {% else %}
+    <h1>Try it free</h1>
+    <p class="auth-sub">Create a free account and take a 10-question practice test on the real exam screen. No payment needed.</p>
+    {% endif %}
     {% if messages %}
     <div class="alert" role="alert">
       {% if messages|length == 1 %}{% for m in messages %}{{ m }}{% endfor %}

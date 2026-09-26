@@ -16,9 +16,9 @@
       <p class="hero-sub">Timed, computer-based practice with past questions{% if site_settings.shared_exam_short_name %} for the {{ site_settings.shared_exam_short_name }} test{% endif %} and your department, so exam day feels familiar.</p>
       <div class="hero-cta">
         <a href="{{ url('billing:plans_browse') }}" class="btn btn-primary btn-lg">Subscribe Now! {{ icon("arrow-right", size=16) }}</a>
-        <a href="{{ url('branding:how_it_works') }}" class="btn btn-quiet btn-lg">How it works</a>
+        <a href="{% if request.user.is_authenticated %}{{ url('examhub:free_trial') }}{% else %}{{ url('accounts:register') }}{% endif %}" class="btn btn-outline btn-lg">Try 10 questions free</a>
       </div>
-      <p class="hero-note"><b>Subscription-based.</b> Instant access after payment.</p>
+      <p class="hero-note"><b>Free trial:</b> create an account and take a 10-question test on the real exam screen. Subscribe for full access; instant after payment.</p>
     </div>
 
     <div class="preview" aria-hidden="true">

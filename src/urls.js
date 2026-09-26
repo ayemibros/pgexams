@@ -66,6 +66,7 @@ const URLS = {
   'examhub:exam_list': '/exams/',
   'examhub:exam_start': '/exams/:pk/start/',
   'examhub:practice_setup': '/practice/',
+  'examhub:free_trial': '/trial/',
   'examhub:student_results': '/results/',
   'examhub:exam_take': '/attempt/:attempt_pk/take/',
   'examhub:save_answer': '/attempt/:attempt_pk/save/',
