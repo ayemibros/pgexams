@@ -13,13 +13,17 @@
         {% for val, label in status_choices %}<option value="{{ val }}" {% if filters.status == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
       </select>
     </form>
+    <form method="post" action="{{ url('billing:payment_recheck_all') }}" onsubmit="this.querySelector('button').disabled=true;this.querySelector('button').textContent='Checking…';">
+      {{ csrf_input }}
+      <button type="submit" class="btn btn-primary btn-sm">Recheck pending with Paystack</button>
+    </form>
   </div>
 </div>
 
 {% if payments %}
 <div class="card">
   <table class="table">
-    <thead><tr><th>Reference</th><th>Student</th><th>Plan</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead>
+    <thead><tr><th>Reference</th><th>Student</th><th>Plan</th><th>Amount</th><th>Status</th><th>Date</th><th></th></tr></thead>
     <tbody>
       {% for p in payments %}
       <tr>
@@ -33,6 +37,14 @@
           {% else %}<span class="pill pill-amber">Pending</span>{% endif %}
         </td>
         <td>{{ p.created_at|date("d M Y, H:i") }}</td>
+        <td>
+          {% if p.status != 'success' %}
+          <form method="post" action="{{ url('billing:payment_recheck', p.pk) }}" style="display:inline">
+            {{ csrf_input }}
+            <button type="submit" class="btn btn-outline btn-sm">Recheck with Paystack</button>
+          </form>
+          {% endif %}
+        </td>
       </tr>
       {% endfor %}
     </tbody>

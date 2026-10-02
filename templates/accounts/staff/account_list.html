@@ -32,8 +32,14 @@
         <td><span class="pill pill-gray">{{ a.get_role_display }}</span></td>
         <td>{{ a.email|default("—") }}</td>
         <td>{% if a.is_active %}<span class="pill pill-green">Active</span>{% else %}<span class="pill pill-red">Disabled</span>{% endif %}</td>
-        <td>
-          {% if a.pk != request.user.pk %}
+        <td style="white-space:nowrap">
+          {% if a.can_reset %}
+          <form method="post" action="{{ url('accounts:account_reset_password', a.pk) }}" style="display:inline" onsubmit="return confirm('Reset the password for {{ a.username }}? Their current password will stop working.');">
+            {{ csrf_input }}
+            <button type="submit" class="btn btn-outline btn-sm">Reset Password</button>
+          </form>
+          {% endif %}
+          {% if a.can_toggle %}
           <form method="post" action="{{ url('accounts:account_toggle_active', a.pk) }}" style="display:inline" onsubmit="return confirm('{% if a.is_active %}Disable{% else %}Re-enable{% endif %} this account?');">
             {{ csrf_input }}
             <button type="submit" class="btn btn-outline btn-sm" style="{% if a.is_active %}color:#e11d48{% endif %}">{% if a.is_active %}Disable{% else %}Enable{% endif %}</button>

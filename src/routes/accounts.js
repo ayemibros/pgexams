@@ -191,6 +191,10 @@ const ROLE_RANK = { student: 0, staff: 1, admin: 2, super_admin: 3 };
 const CREATABLE_ROLES = { staff: 'Staff / Lecturer', admin: 'Admin' };
 
 const isAdmin = (req) => req.user.is_authenticated && req.user.is_admin;
+const outranks = (actor, target) => (ROLE_RANK[target.role] || 0) < (ROLE_RANK[actor.role] || 0);
+// A Super Admin can reset anyone's password (bar their own — that's Change
+// Password); an Admin only accounts junior to them (staff and students).
+const canResetPassword = (actor, target) => target.id !== actor.id && (actor.is_super_admin || outranks(actor, target));
 
 function denied(req, res) {
   messages.error(req, 'Access denied.');
@@ -200,7 +204,7 @@ function denied(req, res) {
 route(router, 'accounts:account_list', async (req, res) => {
   if (!isAdmin(req)) return denied(req, res);
   const visibleRoles = ['staff', 'student'];
-  if (req.user.is_super_admin) visibleRoles.push('admin');
+  if (req.user.is_super_admin) visibleRoles.push('admin', 'super_admin');
 
   const where = ['role IN (?)'];
   const params = [visibleRoles];
@@ -214,8 +218,13 @@ route(router, 'accounts:account_list', async (req, res) => {
   }
   const rows = await db.all(`SELECT * FROM accounts_user WHERE ${where.join(' AND ')} ORDER BY created_at DESC`, params);
   const labels = Object.fromEntries(User.ROLE_CHOICES);
+  const list = User.hydrateAll(rows);
+  for (const a of list) {
+    a.can_toggle = a.id !== req.user.id && outranks(req.user, a);
+    a.can_reset = canResetPassword(req.user, a);
+  }
   return render(req, res, 'accounts/staff/account_list.html', {
-    active: 'accounts', accounts: User.hydrateAll(rows),
+    active: 'accounts', accounts: list,
     role_choices: visibleRoles.map((r) => [r, labels[r]]), filters: { role: roleFilter, q: search },
   });
 }, { login: true });
@@ -261,7 +270,7 @@ route(router, 'accounts:account_toggle_active', async (req, res, { pk }) => {
     messages.error(req, "You can't disable your own account.");
     return redirect(res, 'accounts:account_list');
   }
-  if ((ROLE_RANK[target.role] || 0) >= (ROLE_RANK[req.user.role] || 0)) {
+  if (!outranks(req.user, target)) {
     messages.error(req, "You don't have permission to change that account.");
     return redirect(res, 'accounts:account_list');
   }
@@ -269,6 +278,22 @@ route(router, 'accounts:account_toggle_active', async (req, res, { pk }) => {
   await db.update('accounts_user', target.id, { is_active: isActive });
   messages.success(req, `${target.get_full_name || target.username} is now ${isActive ? 'active' : 'disabled'}.`);
   return redirect(res, 'accounts:account_list');
+}, { login: true, post: true });
+
+route(router, 'accounts:account_reset_password', async (req, res, { pk }) => {
+  if (!isAdmin(req)) return denied(req, res);
+  const target = await getOr404(accounts.loadUser(pk));
+  if (target.id === req.user.id) {
+    messages.error(req, 'Use Change Password to change your own password.');
+    return redirect(res, 'accounts:account_list');
+  }
+  if (!canResetPassword(req.user, target)) {
+    messages.error(req, "You don't have permission to reset that account's password.");
+    return redirect(res, 'accounts:account_list');
+  }
+  const password = passwords.generatePassword();
+  await db.run('UPDATE accounts_user SET password = ?, must_change_password = 1 WHERE id = ?', [await passwords.makePassword(password), target.id]);
+  return render(req, res, 'accounts/staff/password_reset_done.html', { active: 'accounts', target, new_password: password });
 }, { login: true, post: true });
 
 module.exports = { router, authenticate };

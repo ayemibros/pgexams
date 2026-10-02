@@ -15,6 +15,7 @@ const URLS = {
   'accounts:account_list': '/accounts/staff/accounts/',
   'accounts:account_create': '/accounts/staff/accounts/new/:role/',
   'accounts:account_toggle_active': '/accounts/staff/accounts/:pk/toggle-active/',
+  'accounts:account_reset_password': '/accounts/staff/accounts/:pk/reset-password/',
 
   // ── branding (public site + site settings) ───────────────────────────
   'branding:home': '/',
@@ -54,6 +55,8 @@ const URLS = {
   'billing:subscription_edit': '/staff/subscriptions/:pk/edit/',
   'billing:subscription_cancel': '/staff/subscriptions/:pk/cancel/',
   'billing:payment_list': '/staff/payments/',
+  'billing:payment_recheck': '/staff/payments/:pk/recheck/',
+  'billing:payment_recheck_all': '/staff/payments/recheck-pending/',
   'billing:plans_browse': '/subscribe/',
   'billing:checkout_cart': '/subscribe/checkout/',
   'billing:checkout_start': '/subscribe/:plan_pk/pay/',

@@ -101,6 +101,19 @@ async function activateSubscriptionFromPayment(payment, extra = {}) {
     if (fresh.status === 'success' && fresh.subscription_id) return fresh.subscription_id;
     const plan = Plan.hydrate(await tx.one('SELECT * FROM billing_plan WHERE id = ?', [fresh.plan_id]));
     const now = new Date();
+    // Staff sometimes grant access by hand while a payment is stuck pending.
+    // Once that payment is confirmed, the stand-in grant gives way to the paid
+    // subscription: any still-active manual subscription created after this
+    // payment was started, and not itself backed by a payment, is cancelled.
+    const standIns = await tx.all(
+      `SELECT id, notes FROM billing_subscription s WHERE s.student_id = ? AND s.status = 'active' AND s.created_by_id IS NOT NULL
+         AND s.created_at >= ? AND NOT EXISTS (SELECT 1 FROM billing_payment p WHERE p.subscription_id = s.id)`,
+      [fresh.student_id, fresh.created_at],
+    );
+    for (const s of standIns) {
+      const note = `${s.notes ? `${s.notes} — ` : ''}replaced by Paystack payment ${fresh.reference}`;
+      await tx.update('billing_subscription', s.id, { status: 'cancelled', notes: [...note].slice(0, 255).join('') });
+    }
     const existing = await tx.one(
       `SELECT * FROM billing_subscription WHERE student_id = ? AND plan_id = ? AND status = 'active' AND ends_at >= ?
        ORDER BY ends_at DESC LIMIT 1`, [fresh.student_id, plan.id, now],

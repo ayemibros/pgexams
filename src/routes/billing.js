@@ -211,6 +211,78 @@ route(router, 'billing:payment_list', async (req, res) => {
   });
 }, { login: true });
 
+// Paystack statuses that mean the student never paid. Anything else that isn't
+// "success" (ongoing, pending, processing — e.g. a bank transfer still on its
+// way) is left pending so a later recheck or the webhook can still settle it.
+const PAYSTACK_DEAD = new Set(['abandoned', 'failed', 'reversed']);
+
+/**
+ * Asks Paystack what really happened to `payment` and records it — the
+ * fallback for when the student never came back to the callback page and the
+ * webhook didn't arrive. Returns 'success', 'failed', 'pending' or 'error'.
+ */
+async function recheckPayment(payment) {
+  let data;
+  try {
+    data = await paystack.verifyTransaction(payment.reference);
+  } catch (err) {
+    if (!(err instanceof paystack.PaystackError)) throw err;
+    return 'error';
+  }
+  const expectedKobo = Math.round(Number(payment.amount) * 100);
+  if (data.status === 'success' && Number(data.amount) === expectedKobo) {
+    await activateSubscriptionFromPayment(payment, { raw_response: data });
+    return 'success';
+  }
+  if (data.status === 'success' || PAYSTACK_DEAD.has(data.status)) {
+    await db.update('billing_payment', payment.id, { raw_response: data, status: 'failed' });
+    return 'failed';
+  }
+  return 'pending';
+}
+
+const studentName = async (id) => {
+  const u = await db.one('SELECT username, first_name, last_name FROM accounts_user WHERE id = ?', [id]);
+  return u ? ([u.first_name, u.last_name].filter(Boolean).join(' ') || u.username) : `student #${id}`;
+};
+
+route(router, 'billing:payment_recheck', async (req, res, { pk }) => {
+  if (!isAdmin(req)) return denied(req, res);
+  const payment = await getOr404(db.one('SELECT * FROM billing_payment WHERE id = ?', [pk]).then((r) => Payment.hydrate(r)));
+  if (payment.status === 'success') {
+    messages.info(req, 'That payment is already marked successful.');
+  } else {
+    const who = await studentName(payment.student_id);
+    const outcome = await recheckPayment(payment);
+    if (outcome === 'success') messages.success(req, `Paystack confirmed the payment — ${who} now has access.`);
+    else if (outcome === 'failed') messages.warning(req, `Paystack says ${who} didn't complete this payment. Marked as failed.`);
+    else if (outcome === 'pending') messages.info(req, `Paystack hasn't received ${who}'s payment yet (it may be a transfer still in progress). Left as pending.`);
+    else messages.error(req, "Couldn't reach Paystack. Please try again in a minute.");
+  }
+  return redirect(res, 'billing:payment_list');
+}, { login: true, post: true });
+
+route(router, 'billing:payment_recheck_all', async (req, res) => {
+  if (!isAdmin(req)) return denied(req, res);
+  const pending = Payment.hydrateAll(await db.all("SELECT * FROM billing_payment WHERE status = 'pending' ORDER BY created_at"));
+  const tally = { success: [], failed: 0, pending: 0, error: 0 };
+  for (const payment of pending) {
+    const outcome = await recheckPayment(payment);
+    if (outcome === 'success') tally.success.push(await studentName(payment.student_id));
+    else tally[outcome] += 1;
+  }
+  if (!pending.length) messages.info(req, 'There are no pending payments to recheck.');
+  else {
+    const parts = [`Rechecked ${pending.length} pending payment${pending.length !== 1 ? 's' : ''} with Paystack.`];
+    if (tally.success.length) parts.push(`Access granted: ${tally.success.join(', ')}.`);
+    if (tally.failed) parts.push(`${tally.failed} never paid (marked failed).`);
+    if (tally.pending) parts.push(`${tally.pending} still awaiting payment.`);
+    if (tally.error) parts.push(`${tally.error} couldn't be checked — try again.`);
+    messages[tally.success.length ? 'success' : 'info'](req, parts.join(' '));
+  }
+  return redirect(res, 'billing:payment_list');
+}, { login: true, post: true });
+
 // ─────────────────────────────────────────── STUDENT CHECKOUT (PAYSTACK) ──
 
 /** Subscribable postgraduate programmes: active, not hidden by an inactive department/faculty. */
