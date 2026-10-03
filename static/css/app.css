@@ -9,6 +9,8 @@
   --white:var(--card);--green:var(--success);
 }
 html{-webkit-text-size-adjust:100%}
+/* Roomier type on laptops and desktops; every size below is in rem, so this scales the lot. */
+@media(min-width:961px){html{font-size:112.5%}}
 body{margin:0;font-family:var(--font);background:radial-gradient(1100px 620px at 85% -12%,var(--glow-1),transparent 62%),radial-gradient(900px 520px at -10% 110%,var(--glow-2),transparent 60%),var(--bg);background-attachment:fixed;color:var(--text);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;line-height:1.5}
 a{color:inherit}
 button,input,select,textarea{font-family:inherit}
