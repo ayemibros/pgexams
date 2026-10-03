@@ -22,7 +22,7 @@
 {% if subscriptions %}
 <div class="card">
   <table class="table">
-    <thead><tr><th>Student</th><th>Plan</th><th>Status</th><th>Starts</th><th>Ends</th><th>Granted by</th><th></th></tr></thead>
+    <thead><tr><th>Student</th><th>Plan</th><th>Status</th><th>Starts</th><th>Ends</th><th>Granted by</th><th>Paid</th><th></th></tr></thead>
     <tbody>
       {% for sub in subscriptions %}
       <tr>
@@ -36,6 +36,10 @@
         <td>{{ sub.starts_at|date("d M Y") }}</td>
         <td>{{ sub.ends_at|date("d M Y") }}</td>
         <td>{{ sub.created_by.get_full_name|default(sub.created_by.username)|default("—") }}</td>
+        <td>
+          {% if sub.has_payment %}₦{{ sub.paid|floatformat(0)|intcomma }}
+          {% else %}<a href="{{ url('billing:subscription_edit', sub.pk) }}" style="font-size:.75rem">Not recorded — add amount</a>{% endif %}
+        </td>
         <td>
           <div class="row-actions" style="display:flex;gap:.3rem;justify-content:flex-end">
             <a href="{{ url('billing:subscription_edit', sub.pk) }}" class="btn btn-outline btn-sm">Edit</a>

@@ -140,6 +140,12 @@ route(router, 'billing:subscription_list', async (req, res) => {
   await X.attachUsers(subs, 'created_by_id', 'created_by');
   const plans = await X.byIds(Plan, 'billing_plan', subs.map((s) => s.plan_id));
   for (const s of subs) s.plan = plans.get(s.plan_id);
+  // Money recorded against each subscription, so a grant with nothing on the Payments page stands out.
+  const paid = new Map((await db.all(
+    "SELECT subscription_id, SUM(amount) AS total FROM billing_payment WHERE status = 'success' AND subscription_id IN (?) GROUP BY subscription_id",
+    [db.inList(subs.map((s) => s.id))],
+  )).map((r) => [r.subscription_id, Number(r.total)]));
+  for (const s of subs) { s.has_payment = paid.has(s.id); s.paid = paid.get(s.id) || 0; }
   return render(req, res, 'billing/staff/subscription_list.html', {
     active: 'subscriptions', subscriptions: subs, status_choices: Subscription.STATUS_CHOICES, filters: { q: search, status },
   });
