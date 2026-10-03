@@ -62,6 +62,16 @@
         {% endif %}
         <p class="cta-hint" id="cta-hint">Add a programme to get started.</p>
 
+        <div class="notice bank-pay">
+          <b>Or pay into this account directly</b>
+          <dl>
+            <dt>Account</dt><dd>2125104234</dd>
+            <dt>Name</dt><dd>Adeola A.A.</dd>
+            <dt>Bank</dt><dd>UBA</dd>
+          </dl>
+          <p>Transfer the total shown above, then send your proof of payment with your username and the programmes you chose{% if site_settings.whatsapp_number %} on WhatsApp to <b>{{ site_settings.whatsapp_number }}</b>{% elif site_settings.contact_email %} to <a href="mailto:{{ site_settings.contact_email }}">{{ site_settings.contact_email }}</a>{% elif site_settings.contact_phone %} to <b>{{ site_settings.contact_phone }}</b>{% else %} to support{% endif %}. Your access is switched on once the payment is confirmed.</p>
+        </div>
+
         <p class="incl-line">{{ icon("check-circle", size=14) }}<span>Each programme includes{% if site_settings.shared_exam_short_name %} the {{ site_settings.shared_exam_short_name }} test and{% endif %} its department exams, all years, with unlimited practice.</span></p>
       </aside>
     </div>

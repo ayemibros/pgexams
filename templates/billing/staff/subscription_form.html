@@ -22,10 +22,48 @@
     </div>
     <div class="form-row">
       <label class="form-label">Plan</label>
-      <select name="plan" class="form-select" required>
+      <select name="plan" id="plan" class="form-select" required>
         <option value="">— Select a plan —</option>
+        {% if subscription %}
         {% for p in plans %}<option value="{{ p.pk }}" {% if subscription.plan_id == p.pk %}selected{% endif %}>{{ p.name }} — ₦{{ p.price|floatformat(0)|intcomma }} / {{ p.duration_days }}d</option>{% endfor %}
+        {% else %}
+        {% if tiers and programs %}
+        <optgroup label="Postgraduate programmes · price per programme">
+          {% for t in tiers %}<option value="tier:{{ t.pk }}" data-price="{{ t.price }}">{{ t.months }} month{{ t.months|pluralize }} — ₦{{ t.price|floatformat(0)|intcomma }} per programme</option>{% endfor %}
+        </optgroup>
+        {% endif %}
+        {% if plans %}
+        <optgroup label="Other plans">
+          {% for p in plans %}<option value="{{ p.pk }}" data-price="{{ p.price }}">{{ p.name }} — ₦{{ p.price|floatformat(0)|intcomma }} / {{ p.duration_days }}d</option>{% endfor %}
+        </optgroup>
+        {% endif %}
+        {% endif %}
       </select>
+      {% if not subscription %}<div class="form-hint">The same plan lengths and prices applicants see on the Subscribe page.</div>{% endif %}
+    </div>
+    {% if tiers and programs %}
+    <div class="form-row" id="programme-row" style="display:none">
+      <label class="form-label">Programmes <span id="prog-count" style="font-weight:500;color:var(--muted-2)"></span></label>
+      <input type="search" id="prog-filter" class="form-input" placeholder="Filter by programme, department or faculty…" autocomplete="off">
+      <div id="prog-list" style="max-height:260px;overflow:auto;border:1px solid var(--border-strong);border-radius:10px;padding:.4rem .8rem;margin-top:.5rem">
+        {% for b in programs %}
+        <label class="form-check" style="padding:.3rem 0" data-key="{{ b.search_key }}">
+          <input type="checkbox" name="programs" value="{{ b.pk }}">
+          <span>{{ b.name }}{% if b.department %} <span style="color:var(--muted-2)">· {{ b.department.name }}</span>{% endif %}</span>
+        </label>
+        {% endfor %}
+      </div>
+      <div class="form-hint">Tick every programme the student paid for (up to {{ max_programs }}). The price is charged for each one.</div>
+    </div>
+    {% endif %}
+    <div class="form-row">
+      <label class="form-label">Amount received (₦)</label>
+      {% if payment %}
+      <div class="form-hint" style="margin-top:0">₦{{ payment.amount|floatformat(0)|intcomma }} is already recorded on the Payments page for this subscription ({{ payment.reference }}).</div>
+      {% else %}
+      <input type="number" name="amount" id="amount" class="form-input" min="0" step="1" inputmode="numeric" {% if not subscription %}required{% endif %}>
+      <div class="form-hint">Recorded on the Payments page as a bank transfer and added to the amount collected. {% if subscription %}Leave blank if no payment needs recording.{% else %}Filled in from the plan; change it if the student paid a different amount, or enter 0 to grant access without a payment.{% endif %}</div>
+      {% endif %}
     </div>
     <div class="form-row">
       <label class="form-label">Status</label>
@@ -53,4 +91,44 @@
     <a href="{{ url('billing:subscription_list') }}" class="btn btn-outline">Cancel</a>
   </form>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+{% if not subscription %}
+<script>
+(function(){
+  var plan = document.getElementById('plan'), amount = document.getElementById('amount');
+  var row = document.getElementById('programme-row'), filter = document.getElementById('prog-filter'), count = document.getElementById('prog-count');
+  var labels = Array.prototype.slice.call(document.querySelectorAll('#prog-list label'));
+  var boxes = labels.map(function(l){ return l.querySelector('input'); });
+  var CAP = {{ max_programs }}, edited = false;
+
+  function perProgramme(){ return plan.value.indexOf('tier:') === 0; }
+  function ticked(){ return boxes.filter(function(b){ return b.checked; }).length; }
+
+  // The amount follows the plan (x programmes) until staff type their own figure.
+  function sync(){
+    var per = perProgramme(), n = ticked(), opt = plan.options[plan.selectedIndex];
+    if(row) row.style.display = per ? '' : 'none';
+    boxes.forEach(function(b){ b.disabled = !b.checked && n >= CAP; });
+    if(count) count.textContent = n ? '· ' + n + ' selected' : '';
+    if(!edited) amount.value = plan.value && (!per || n) ? Math.round(Number(opt.dataset.price) * (per ? n : 1)) : '';
+  }
+
+  plan.addEventListener('change', sync);
+  boxes.forEach(function(b){ b.addEventListener('change', sync); });
+  amount.addEventListener('input', function(){ edited = amount.value !== ''; });
+  if(filter) filter.addEventListener('input', function(){
+    var tokens = filter.value.trim().toLowerCase().split(/\s+/);
+    labels.forEach(function(l){
+      l.style.display = tokens.every(function(t){ return l.dataset.key.indexOf(t) >= 0; }) ? '' : 'none';
+    });
+  });
+  plan.form.addEventListener('submit', function(e){
+    if(perProgramme() && !ticked()){ e.preventDefault(); alert('Tick at least one programme for this plan.'); }
+  });
+  sync();
+})();
+</script>
+{% endif %}
 {% endblock %}

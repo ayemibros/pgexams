@@ -270,6 +270,12 @@ main{animation:page-in .4s ease both}
 .alt-line a{color:var(--blue-dark);font-weight:500;text-decoration:none}
 .alt-line a:hover{text-decoration:underline}
 .cta-hint{margin-top:.55rem;text-align:center;font-size:.78rem;color:var(--muted)}
+.bank-pay{margin-top:.85rem;font-size:.8rem;line-height:1.5}
+.bank-pay>b{display:block;color:var(--ink);font-weight:500;margin-bottom:.4rem}
+.bank-pay dl{display:grid;grid-template-columns:auto 1fr;gap:.15rem .75rem;margin:0 0 .5rem}
+.bank-pay dt{color:var(--muted)}
+.bank-pay dd{margin:0;font-weight:500;color:var(--ink);user-select:all}
+.bank-pay p{margin:0;color:var(--muted)}
 .incl-line{display:flex;gap:.45rem;align-items:flex-start;margin-top:.85rem;padding-top:.8rem;border-top:1px solid var(--line);font-size:.78rem;line-height:1.5;color:var(--muted)}
 .incl-line svg{color:var(--blue-dark);flex-shrink:0;margin-top:.15rem}
 

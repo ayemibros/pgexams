@@ -145,10 +145,34 @@ route(router, 'billing:subscription_list', async (req, res) => {
   });
 }, { login: true });
 
+/** Whole naira received outside Paystack; blank or 0 means there is no payment to record. Returns [amount|null, error|null]. */
+function parseAmount(raw) {
+  const text = String(raw ?? '').replace(/[,₦\s]/g, '');
+  if (!text) return [0, null];
+  if (!/^\d+$/.test(text)) return [null, 'Enter the amount received as a whole naira figure, e.g. 5000.'];
+  const value = parseInt(text, 10);
+  if (value > MAX_TIER_PRICE * MAX_CART_PROGRAMS) return [null, 'That amount is too large.'];
+  return [value, null];
+}
+
+/**
+ * Granting offers what the Subscribe page sells: the site-wide plan lengths
+ * (priced per postgraduate programme) plus the manual "other" plans. Money
+ * received by bank transfer is recorded as a successful Payment so it shows on
+ * the Payments page and counts towards the amount collected.
+ */
 async function subscriptionForm(req, res, { pk = null } = {}) {
   if (!isAdmin(req)) return denied(req, res);
   const subscription = pk ? await getOr404(db.one('SELECT * FROM billing_subscription WHERE id = ?', [pk]).then((r) => Subscription.hydrate(r))) : null;
   const plans = Plan.hydrateAll(await db.all(`SELECT * FROM billing_plan ${subscription ? '' : 'WHERE is_active = 1'} ORDER BY name`));
+  const tiers = subscription ? [] : PricingTier.hydrateAll(await db.all('SELECT * FROM billing_pricingtier WHERE is_active = 1 ORDER BY months'));
+  const programs = tiers.length ? await availablePrograms() : [];
+  for (const b of programs) {
+    const dept = b.department;
+    b.search_key = [b.name, dept ? dept.name : '', dept && dept.faculty ? dept.faculty.name : ''].join(' ').toLowerCase();
+  }
+  const payment = subscription
+    ? Payment.hydrate(await db.one("SELECT * FROM billing_payment WHERE subscription_id = ? AND status = 'success' ORDER BY created_at LIMIT 1", [subscription.id])) : null;
 
   const search = strip(req.GET.get('q', ''));
   const params = [];
@@ -163,25 +187,50 @@ async function subscriptionForm(req, res, { pk = null } = {}) {
   if (req.method === 'POST') {
     const p = req.POST;
     const studentPk = intOrNull(p.get('student'));
-    const plan = Plan.hydrate(await db.one('SELECT * FROM billing_plan WHERE id = ?', [intOrNull(p.get('plan')) ?? -1]));
+    // "tier:<id>" is a plan length bought per programme; a bare id is an ordinary plan.
+    const planRaw = p.get('plan', '');
+    const tierMatch = /^tier:(\d+)$/.exec(planRaw);
+    const tier = tierMatch ? tiers.find((t) => t.id === parseInt(tierMatch[1], 10)) || null : null;
+    const picked = tier ? parseIds(p.getlist('programs').join(',')) : [];
+    const chosen = programs.filter((b) => picked.includes(b.id));
+    const plan = tier ? null : Plan.hydrate(await db.one('SELECT * FROM billing_plan WHERE id = ?', [intOrNull(planRaw) ?? -1]));
     const student = studentPk ? await db.one('SELECT id FROM accounts_user WHERE id = ?', [studentPk]) : null;
-    if (!student || !plan) {
+    const [amount, amountError] = payment ? [0, null] : parseAmount(p.get('amount'));
+    if (!student || (!tier && !plan)) {
       messages.error(req, 'Choose a student and a plan.');
+    } else if (tier && !chosen.length) {
+      messages.error(req, 'Tick at least one programme for that plan length.');
+    } else if (chosen.length > MAX_CART_PROGRAMS) {
+      messages.error(req, `A subscription can cover up to ${MAX_CART_PROGRAMS} programmes at a time.`);
+    } else if (amountError) {
+      messages.error(req, amountError);
     } else {
-      const startsAt = parseLocalDateTime(p.get('starts_at') || '') || new Date();
-      const endsAt = parseLocalDateTime(p.get('ends_at') || '') || new Date(startsAt.getTime() + plan.duration_days * DAY_MS);
-      const data = {
-        student_id: student.id, plan_id: plan.id, status: p.get('status', 'active'), starts_at: startsAt, ends_at: endsAt,
-        notes: strip(p.get('notes', '')).slice(0, 255),
-      };
-      if (subscription) await db.update('billing_subscription', subscription.id, data);
-      else await db.insert('billing_subscription', { ...data, created_by_id: req.user.id, created_at: new Date() });
-      messages.success(req, 'Subscription saved.');
+      const now = new Date();
+      const startsAt = parseLocalDateTime(p.get('starts_at') || '') || now;
+      const endsAt = parseLocalDateTime(p.get('ends_at') || '') || new Date(startsAt.getTime() + (tier || plan).duration_days * DAY_MS);
+      const notes = strip(p.get('notes', '')).slice(0, 255);
+      await db.transaction(async (tx) => {
+        const planId = tier ? await createOrderSnapshot(tx, chosen, tier) : plan.id;
+        const data = { student_id: student.id, plan_id: planId, status: p.get('status', 'active'), starts_at: startsAt, ends_at: endsAt, notes };
+        let subId = subscription ? subscription.id : null;
+        if (subId) await tx.update('billing_subscription', subId, data);
+        else subId = await tx.insert('billing_subscription', { ...data, created_by_id: req.user.id, created_at: now });
+        if (amount > 0) {
+          await tx.insert('billing_payment', {
+            student_id: student.id, plan_id: planId, reference: `transfer_${crypto.randomBytes(16).toString('hex')}`, amount, status: 'success',
+            subscription_id: subId, raw_response: { channel: 'bank_transfer', recorded_by_id: req.user.id, notes }, created_at: now, verified_at: now,
+          });
+        }
+      });
+      messages.success(req, amount > 0
+        ? `Subscription saved. ₦${amount.toLocaleString('en-US')} recorded as a bank transfer payment.` : 'Subscription saved.');
       return redirect(res, 'billing:subscription_list');
     }
   }
 
-  return render(req, res, 'billing/staff/subscription_form.html', { active: 'subscriptions', subscription, plans, students, search });
+  return render(req, res, 'billing/staff/subscription_form.html', {
+    active: 'subscriptions', subscription, plans, tiers, programs, payment, students, search, max_programs: MAX_CART_PROGRAMS,
+  });
 }
 route(router, 'billing:subscription_add', (req, res) => subscriptionForm(req, res), { login: true });
 route(router, 'billing:subscription_edit', (req, res, p) => subscriptionForm(req, res, p), { login: true });
@@ -397,6 +446,19 @@ route(router, 'billing:plans_browse', async (req, res) => {
   });
 });
 
+/** Records an order as a hidden snapshot Plan listing exactly `programs`, priced per programme from `tier`. Returns its id. */
+async function createOrderSnapshot(tx, programs, tier) {
+  const label = monthsLabel(tier.months);
+  const name = programs.length === 1 ? `${programs[0].name} — ${label}` : `${programs[0].name} + ${programs.length - 1} more — ${label}`;
+  const id = await tx.insert('billing_plan', {
+    name: [...name].slice(0, 150).join(''), description: `Programmes: ${programs.map((p) => p.name).join('; ')}`,
+    price: Number(tier.price) * programs.length, duration_days: tier.duration_days,
+    is_all_access: false, is_active: false, is_order_snapshot: true, created_at: new Date(),
+  });
+  await tx.insertMany('billing_plan_bundles', programs.map((p) => ({ plan_id: id, bundle_id: p.id })));
+  return id;
+}
+
 /** Create the Payment for `plan` and send the student to Paystack (or the local simulator). */
 async function startPayment(req, res, plan, { deletePlanOnAbort = false } = {}) {
   const { user } = req;
@@ -482,17 +544,7 @@ route(router, 'billing:checkout_cart', async (req, res) => {
     return redirect(res, 'billing:plans_browse');
   }
 
-  const label = monthsLabel(tier.months);
-  const name = programs.length === 1 ? `${programs[0].name} — ${label}` : `${programs[0].name} + ${programs.length - 1} more — ${label}`;
-  const planId = await db.transaction(async (tx) => {
-    const id = await tx.insert('billing_plan', {
-      name: [...name].slice(0, 150).join(''), description: `Programmes: ${programs.map((p) => p.name).join('; ')}`,
-      price: Number(tier.price) * programs.length, duration_days: tier.duration_days,
-      is_all_access: false, is_active: false, is_order_snapshot: true, created_at: new Date(),
-    });
-    await tx.insertMany('billing_plan_bundles', programs.map((p) => ({ plan_id: id, bundle_id: p.id })));
-    return id;
-  });
+  const planId = await db.transaction((tx) => createOrderSnapshot(tx, programs, tier));
   const plan = Plan.hydrate(await db.one('SELECT * FROM billing_plan WHERE id = ?', [planId]));
   return startPayment(req, res, plan, { deletePlanOnAbort: true });
 }, { login: true, post: true });
