@@ -53,8 +53,9 @@ route(router, 'examhub:staff_dashboard', async (req, res) => {
 
   const pendingGrading = Number(await db.value(
     `SELECT COUNT(*) FROM examhub_attemptanswer a JOIN examhub_examquestion q ON q.id = a.exam_question_id
+       JOIN examhub_examattempt t ON t.id = a.attempt_id
        LEFT JOIN examhub_question b ON b.id = q.bank_question_id
-     WHERE a.manual_score IS NULL AND (q.question_type = 'theory' OR b.question_type = 'theory') AND a.text_answer <> ''`,
+     WHERE a.manual_score IS NULL AND t.mode <> 'practice' AND (q.question_type = 'theory' OR b.question_type = 'theory') AND a.text_answer <> ''`,
   ));
   const recentAttempts = ExamAttempt.hydrateAll(await db.all(
     `SELECT * FROM examhub_examattempt WHERE status IN ${DONE} ORDER BY completed_at IS NULL, completed_at DESC LIMIT 8`,

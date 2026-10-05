@@ -113,6 +113,7 @@ input[type=radio],input[type=checkbox]{display:none}
 .practice-fb{padding:13px 16px;border-radius:10px;margin-top:14px;font-size:12.5px;line-height:1.6;display:none}
 .practice-fb.correct{background:var(--success-soft);border:1px solid var(--success-soft);color:var(--success)}
 .practice-fb.wrong{background:var(--danger-soft);border:1px solid var(--danger-soft);color:var(--danger)}
+.practice-fb.model{background:var(--surface2);border:1px solid var(--border);color:var(--text)}
 .practice-fb.show{display:block}
 #q-nav{background:var(--chrome);backdrop-filter:blur(10px);border-top:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;gap:10px;flex-shrink:0;position:sticky;bottom:0;z-index:100;max-width:820px;width:100%;margin:0 auto;border-radius:0 0 14px 14px}
 .nav-btn{display:flex;align-items:center;gap:5px;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:700;border:none;cursor:pointer;transition:all .13s}
@@ -368,6 +369,7 @@ function init() {
       flagged: q.flagged,
       answered: q.answered,
     };
+    if(q.self_check && q.saved_data && typeof q.saved_data.self_mark === 'boolean') state[q.pk].practice_correct = q.saved_data.self_mark;
   });
   buildPalette();
   buildSectionChips();
@@ -573,6 +575,16 @@ function buildQuestionBody(q, s) {
     };
     wrap.appendChild(ta);
     wrap.appendChild(counter);
+    if(q.self_check) {
+      wrap.firstChild.textContent = 'Say your answer aloud or type it below, then check it against the model answer';
+      const show = document.createElement('button');
+      show.type = 'button';
+      show.className = 'nav-btn nav-btn-next';
+      show.style.marginTop = '10px';
+      show.textContent = 'Show model answer';
+      show.onclick = () => selfCheck(q.pk, {reveal: true});
+      wrap.appendChild(show);
+    }
   } else if(t === 'match') {
     wrap.innerHTML = '<div class="q-instr">Click an item on the left, then click its match on the right</div>';
     const layout = document.createElement('div');
@@ -837,6 +849,48 @@ function autoSave(qpk, type, value) {
     })
     .catch(()=>{});
   }, 400);
+}
+
+// Open-ended practice questions: the student reveals the model answer, then marks themselves.
+function selfCheck(qpk, extra) {
+  clearTimeout(saveDebounce[qpk]);
+  return fetch(SAVE_URL, {
+    method:'POST',
+    headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
+    body: JSON.stringify({question_pk:qpk, type:'text', value:state[qpk].text || '', ...extra})
+  })
+  .then(r=>r.json())
+  .then(d => {
+    if(!d.ok || EXAM.questions[currentIdx].pk !== qpk) return;
+    if(extra.reveal) showModelAnswer(qpk, d.model_answer);
+  })
+  .catch(()=>{});
+}
+
+function showModelAnswer(qpk, modelAnswer) {
+  const fb = document.getElementById('practice-fb');
+  fb.className = 'practice-fb show model';
+  fb.innerHTML = '<strong>Model answer</strong><div style="margin-top:6px"></div>'
+    + '<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">'
+    + '<button type="button" class="nav-btn nav-btn-prev" data-mark="1">✓ I covered the main points</button>'
+    + '<button type="button" class="nav-btn nav-btn-prev" data-mark="0">✗ I need to revise this</button></div>';
+  fb.querySelector('div').innerHTML = modelAnswer || 'No model answer has been provided for this question.';
+  const mark = () => fb.querySelectorAll('[data-mark]').forEach(b => {
+    const mine = state[qpk].practice_correct === (b.dataset.mark === '1');
+    b.style.outline = mine ? '2px solid var(--primary)' : '';
+  });
+  fb.querySelectorAll('[data-mark]').forEach(b => {
+    b.onclick = () => {
+      state[qpk].practice_correct = b.dataset.mark === '1';
+      state[qpk].answered = true;
+      mark();
+      refreshStatus();
+      refreshPalette();
+      selfCheck(qpk, {self_mark: state[qpk].practice_correct});
+    };
+  });
+  mark();
+  renderMath(fb);
 }
 
 function showPracticeFeedback(qpk, correct, explanation, correctDisplay) {

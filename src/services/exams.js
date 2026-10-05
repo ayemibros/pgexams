@@ -182,13 +182,15 @@ async function attemptAnswers(attemptId) {
   return answers;
 }
 
-/** ExamAttempt.has_ungraded_theory */
+/** ExamAttempt.has_ungraded_theory — practice attempts are self-marked, never staff-graded. */
 async function hasUngradedTheory(attemptId) {
   return Boolean(await db.value(
     `SELECT COUNT(*) FROM examhub_attemptanswer a
        JOIN examhub_examquestion q ON q.id = a.exam_question_id
+       JOIN examhub_examattempt t ON t.id = a.attempt_id
        LEFT JOIN examhub_question b ON b.id = q.bank_question_id
-     WHERE a.attempt_id = ? AND a.manual_score IS NULL AND (q.question_type = 'theory' OR b.question_type = 'theory')`, [attemptId],
+     WHERE a.attempt_id = ? AND t.mode <> 'practice' AND a.manual_score IS NULL
+       AND (q.question_type = 'theory' OR b.question_type = 'theory')`, [attemptId],
   ));
 }
 

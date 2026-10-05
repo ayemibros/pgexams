@@ -588,7 +588,7 @@ route(router, 'examhub:exam_take', async (req, res, { attempt_pk }) => {
       data.choices = (q.eff_choices_data || []).map(({ is_correct: _hidden, ...choice }) => choice);
     } else if (qt === 'fill_blank') data.blank_answers = (q.eff_blank_answers || []).map(() => ''); // only how many blanks
     else if (qt === 'numeric') { data.numeric_unit = q.eff_numeric_unit; data.numeric_tolerance = Number(q.eff_numeric_tolerance || 0); }
-    else if (qt === 'theory') data.model_answer = '';
+    else if (qt === 'theory') { data.model_answer = ''; data.self_check = exam.mode === 'practice' && isSelfCheck(q); }
     else if (qt === 'match') { data.match_left = q.eff_match_left; data.match_right = q.eff_match_right; }
     else if (qt === 'order') {
       const items = q.eff_order_items || [];
@@ -634,6 +634,14 @@ function applyAnswer(aa, type, value, forSubmit = false) {
   }
 }
 
+/**
+ * An open-ended question with no keywords can't be marked by the server. In
+ * practice mode the student reveals the model answer and marks themselves.
+ */
+function isSelfCheck(eq) {
+  return eq.eff_type === 'theory' && !(eq.eff_keywords || []).length;
+}
+
 /** An exam question by id, but only if it is part of this attempt's question list. */
 async function examQuestionFor(attempt, qPk) {
   const id = intOrNull(qPk);
@@ -655,8 +663,12 @@ route(router, 'examhub:save_answer', async (req, res, { attempt_pk }) => {
   applyAnswer(aa, data.type, data.value);
   if (data.flagged !== undefined && data.flagged !== null) aa.flagged = pyTruthy(data.flagged);
   aa.time_spent_seconds = Math.max(aa.time_spent_seconds, parseInt(data.time_spent || 0, 10) || 0);
+  const selfCheck = attempt.exam.mode === 'practice' && isSelfCheck(eq);
+  if (selfCheck && typeof data.self_mark === 'boolean') aa.answer_data = { self_mark: data.self_mark };
   await X.saveAnswer(aa);
 
+  // Self-check: no verdict while typing; the model answer goes out only when asked for.
+  if (selfCheck) return jsonResponse(res, data.reveal === true ? { ok: true, model_answer: eq.eff_model_answer } : { ok: true });
   if (attempt.exam.mode === 'practice') {
     const [isCorrect, correctDisplay] = gradeAnswer(eq, aa);
     return jsonResponse(res, { ok: true, practice_feedback: true, correct: isCorrect, explanation: eq.eff_explanation, correct_display: correctDisplay });
@@ -731,7 +743,11 @@ route(router, 'examhub:submit', async (req, res, { attempt_pk }) => {
     const eq = aa.exam_question;
     if (!orderIds.includes(Number(eq.id))) continue;
     const points = Number(eq.points);
-    if (eq.eff_type === 'theory') {
+    if (exam.mode === 'practice' && isSelfCheck(eq)) {
+      aa.is_correct = Boolean(aa.answer_data && aa.answer_data.self_mark === true);
+      aa.auto_score = aa.is_correct ? points : 0;
+      totalEarned += aa.auto_score;
+    } else if (eq.eff_type === 'theory') {
       const keywords = eq.eff_keywords || [];
       const text = String(aa.text_answer || '').toLowerCase();
       const matched = keywords.filter((kw) => text.includes(String(kw).toLowerCase()));
