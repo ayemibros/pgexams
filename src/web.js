@@ -65,7 +65,6 @@ async function loginUser(req, user) {
   await new Promise((resolve, reject) => req.session.regenerate((err) => (err ? reject(err) : resolve())));
   req.session.userId = user.id;
   req.session.authHash = sessionAuthHash(user.password);
-  req.session.csrfToken = crypto.randomBytes(32).toString('hex');
   await db.run('UPDATE accounts_user SET last_login = ? WHERE id = ?', [new Date(), user.id]);
 }
 
@@ -98,16 +97,53 @@ async function loadUser(req, res, next) {
 
 // ───────────────────────────────────────────── CSRF ──
 
-function csrfToken(req) {
-  if (!req.session.csrfToken) req.session.csrfToken = crypto.randomBytes(32).toString('hex');
-  return req.session.csrfToken;
+// The token lives in its own long-lived cookie (like Django's csrftoken), not
+// in the session: a session ends after 8 hours and is replaced on login and
+// logout, so a form left open in a tab — very common on phones — used to carry
+// a token that no longer matched anything and was rejected with a 403.
+const CSRF_COOKIE = 'csrftoken';
+const CSRF_COOKIE_AGE_MS = 365 * 24 * 60 * 60 * 1000;
+const CSRF_TOKEN_RE = /^[a-f0-9]{64}$/;
+
+function readCookie(req, name) {
+  for (const part of String(req.headers.cookie || '').split(';')) {
+    const eq = part.indexOf('=');
+    if (eq > 0 && part.slice(0, eq).trim() === name) return part.slice(eq + 1).trim();
+  }
+  return '';
 }
 
-function csrfFailure(res, reason) {
+/** The request's CSRF token, issuing the cookie on a visitor's first request. */
+function csrfToken(req, res) {
+  if (req.csrfToken) return req.csrfToken;
+  let token = readCookie(req, CSRF_COOKIE);
+  if (!CSRF_TOKEN_RE.test(token)) {
+    token = crypto.randomBytes(32).toString('hex');
+    res.cookie(CSRF_COOKIE, token, { maxAge: CSRF_COOKIE_AGE_MS, httpOnly: true, sameSite: 'lax', secure: config.CSRF_COOKIE_SECURE });
+  }
+  req.csrfToken = token;
+  return token;
+}
+
+function tokensMatch(sent, expected) {
+  const a = Buffer.from(String(sent));
+  const b = Buffer.from(String(expected));
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+
+function csrfFailure(req, res, reason) {
+  // Nothing was saved. Send the visitor back to a fresh copy of the page they came from.
+  let back = '/';
+  try {
+    const ref = new URL(req.get('referer') || '');
+    if (ref.host === req.get('host')) back = ref.pathname + ref.search;
+  } catch (err) { /* no usable referer */ }
   res.status(403).type('html').send(
-    `<!DOCTYPE html><html><head><meta charset="utf-8"><title>403 Forbidden</title></head><body style="font-family:sans-serif;padding:2rem">`
-    + `<h1>Forbidden <span style="color:#666;font-weight:normal">(403)</span></h1><p>CSRF verification failed. Request aborted.</p>`
-    + `${config.DEBUG ? `<p style="color:#666">Reason given for failure: ${escapeHtml(reason)}</p>` : ''}</body></html>`,
+    `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Page expired</title></head>`
+    + `<body style="font-family:sans-serif;padding:2rem;max-width:40rem;margin:auto">`
+    + `<h1>This page has expired</h1><p>The page was open for too long, so your request was not sent. Nothing was lost on our side.</p>`
+    + `<p><a href="${escapeHtml(back)}">Reload the page and try again</a></p>`
+    + `${config.DEBUG ? `<p style="color:#666">CSRF verification failed: ${escapeHtml(reason)}</p>` : ''}</body></html>`,
   );
 }
 
@@ -116,13 +152,15 @@ const CSRF_EXEMPT_PATHS = new Set([URLS['billing:payment_webhook']]);
 
 function csrfProtect(req, res, next) {
   if (CSRF_EXEMPT_PATHS.has(req.path)) return next();
-  const token = csrfToken(req);
+  const token = csrfToken(req, res);
   if (['GET', 'HEAD', 'OPTIONS', 'TRACE'].includes(req.method)) return next();
   const sent = req.POST.get('csrfmiddlewaretoken') || req.get('X-CSRFToken') || '';
-  const a = Buffer.from(String(sent));
-  const b = Buffer.from(token);
-  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return csrfFailure(res, sent ? 'CSRF token incorrect.' : 'CSRF token missing.');
-  return next();
+  if (sent && tokensMatch(sent, token)) return next();
+  // Pages rendered before the token moved to a cookie carry the session's token;
+  // keep accepting it until those sessions run out.
+  const legacy = req.session && req.session.csrfToken;
+  if (sent && legacy && tokensMatch(sent, legacy)) return next();
+  return csrfFailure(req, res, sent ? 'CSRF token incorrect.' : 'CSRF token missing.');
 }
 
 // ───────────────────────────────────────────── rendering ──
@@ -150,7 +188,7 @@ function requestContext(req) {
 
 async function renderToString(req, template, ctx = {}) {
   const user = req.user || ANONYMOUS;
-  const token = req.session ? csrfToken(req) : '';
+  const token = req.csrfToken || '';
   const context = {
     request: requestContext(req),
     user,
